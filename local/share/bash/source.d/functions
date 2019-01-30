@@ -1,0 +1,23 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+BASH_LIB_PATH="$HOME/.local/lib/bash"
+BASH_SOURCE_D="$HOME/.local/share/bash/source.d"
+
+include()
+{
+	local name="$1"
+	if [[ -r "$BASH_LIB_PATH/$name" ]]; then
+		. "$BASH_LIB_PATH/$name"
+	elif [[ -r "$BASH_LIB_PATH/$name.sh" ]]; then
+		. "$BASH_LIB_PATH/$name.sh"
+	elif [[ -r "$BASH_SOURCE_D/$name" ]]; then
+		. "$BASH_SOURCE_D/$name"
+	elif [[ -r "$BASH_SOURCE_D/$name.sh" ]]; then
+		. "$BASH_SOURCE_D/$name.sh"
+	else
+		echo "No bash library '$name'!" >&2
+		return 1
+	fi
+}
+

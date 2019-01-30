@@ -1,0 +1,8 @@
+# More bash settings
+_shopt=$(shopt -p nullglob)
+shopt -s nullglob
+for f in "$HOME/.local/share/bash/source.d"/*; do
+  . "$f"
+done
+$_shopt  # restore nullglob
+

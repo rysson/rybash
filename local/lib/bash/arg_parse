@@ -1,0 +1,114 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+include bool
+
+#------------------------------------------------------------------------------
+# Parse command line arguments
+#
+# Example:
+#   while arg_parse "$@"; do
+#     case "$op" in
+#       -f|--foo)  arg_arg foo;;
+#       --bar)     arg_optarg bar;;
+#       -b|--baz)  arg_true baz;;
+#     esac
+#   done
+#
+# Old example:
+#   while arg_parse "$@"; do
+#     case "$op" in
+#       -f|--foo)  arg_arg; foo="$arg";;
+#       --bar)     arg_optarg; bar="$optarg";;
+#       -b|--baz)  baz="$TRUE";;
+#     esac
+#   done
+#------------------------------------------------------------------------------
+# Parse arguments
+#
+# arg_parse command-line-arguments...
+#
+# Function parse and set variables:
+#  $op     - option
+#  $arg    - option argument if any; variable is set after arg_arg call
+#  $optarg - optional argument if any (--key=value); variable is set after arg_optarg call
+#
+#  Input:      $op:    $arg:  $optarg:
+#  -f FOO      -f      FOO
+#  -fFOO       -f      FOO    FOO
+#  --foo FOO   --foo   FOO
+#  --foo=FOO   --foo   FOO    FOO
+#------------------------------------------------------------------------------
+arg_parse()
+{
+	[[ -z "${_args_copied+x}" ]] && _args=("$@") && _args_copied=y
+	[[ ${#_args[@]} = 0 ]] && return 1
+	op="${_args[0]}"
+	_args=("${_args[@]:1}")
+	_arg_shift=
+	_lnarg_shift=
+	arg=
+	optarg=
+	case "$op" in
+		--*=*)  _arg="${op#*=}";    _optarg="$_arg";   op="${op%%=*}";;
+		--*)    _arg="${_args[0]}"; _optarg="$TRUE";   _arg_shift=$TRUE;;
+		-??*)   _arg="${op:2}";     _optarg="${_arg}"; op="${op:0:2}";
+		        _lnarg_shift=$TRUE; _args=("-$_arg" "${_args[@]}");;
+		-?)     _arg="${_args[0]}"; _optarg=;          _arg_shift=$TRUE;;
+		*)      _arg=;              _optarg=;;
+	esac
+}
+#------------------------------------------------------------------------------
+# Prepare arguments to next parsing
+arg_reset()
+{
+	unset _args_copied
+}
+#------------------------------------------------------------------------------
+# Return argument. Shift if neccesery.
+#
+# arg_arg [var]
+#------------------------------------------------------------------------------
+arg_arg()
+{
+	is_true "$_arg_shift" && _args=("${_args[@]:1}")
+	if is_true "$_lnarg_shift"; then
+		case "$op" in
+			-[^-])  [[ $_arg ]] && _args=("${_args[@]:1}");;
+		esac
+		_lnarg_shift=
+	fi
+	_arg_shift=
+	arg="$_arg"
+	local re='^[a-zA-Z_]\w*$'
+	[[ $1 =~ $re ]] && eval "$1='$arg'"
+}
+#------------------------------------------------------------------------------
+# Return optional argument. Shift if neccesery.
+#
+# arg_optarg [var]
+#------------------------------------------------------------------------------
+arg_optarg()
+{
+	if is_true "$_lnarg_shift"; then
+		case "$op" in
+			-[^-])  [[ $_optarg ]] && _args=("${_args[@]:1}");;
+		esac
+		_lnarg_shift=
+	fi
+	optarg="$_optarg"
+	local re='^[a-zA-Z_]\w*$'
+	[[ $1 =~ $re ]] && eval "$1='$optarg'"
+}
+#------------------------------------------------------------------------------
+# Return bollen arguments (true).
+#
+# arg_true [var]
+#------------------------------------------------------------------------------
+arg_true()
+{
+	arg="$TRUE"
+	local re='^[a-zA-Z_]\w*$'
+	[[ $1 =~ $re ]] && eval "$1='$TRUE'"
+}
+#------------------------------------------------------------------------------

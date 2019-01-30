@@ -1,0 +1,144 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+
+if [ -z "$_stdout_piped" ]; then
+	[ -t 1 ] && _stdout_piped= || _stdout_piped=y
+fi
+
+#------------------------------------------------------------------------------
+# Print color sequence
+#
+# c [color]...
+#
+# Where:
+#   `color' is ansi code (1, 31, 41) or name like:
+#           b i u s or bold italic underline strike dim...
+#           black, red, green, yellow, blue...
+#           upercase for background (BLACK, RED, GREEN...)
+#           K (black), R, G, Y, B, M, C, W
+#           or the same with "f" like fK, fR, fG...
+#           background with "b", like bK, bR, bG...
+#           or full name (see code below)
+#
+# Example:
+#   echo "This is $(c red)red$(c) text on $(c bB)blue$(c) background."
+#------------------------------------------------------------------------------
+c()
+{
+	[[ y = "$_stdout_piped" ]] && return  # only terminal
+	case "$TERM" in xterm|xterm-color|*-256color) ;; *) return ;; esac # only colors
+	local col=( "$@" )
+	local i
+	for i in ${!col[@]}; do
+		case "${col[i]}" in
+			reset|off|rst|RST|-)                    col[i]='0' ;;
+			B|b|bold|strong)                        col[i]='1' ;;
+			dim)                                    col[i]='2' ;;
+			I|i|italic)                             col[i]='3' ;;
+			U|u|underline)                          col[i]='4' ;;
+			blink)                                  col[i]='5' ;;
+			neg|negative|inv|inverse)               col[i]='7' ;;
+			hidden)                                 col[i]='8' ;;
+			S|s|strike)                             col[i]='9' ;;
+			/B|/b|/bold|/strong)                    col[i]='22' ;;
+			/dim)                                   col[i]='22' ;;
+			/I|/i|/italic)                          col[i]='23' ;;
+			/U|/u|/underline)                       col[i]='24' ;;
+			/blink)                                 col[i]='25' ;;
+			/neg|/negative|/inv|/inverse)           col[i]='27' ;;
+			/hidden)                                col[i]='28' ;;
+			/S|/s|/strike)                          col[i]='29' ;;
+			fK|FG.black|fg[/.]black|black)          col[i]='30' ;;
+			fR|FG.red|fg[/.]red|red)                col[i]='31' ;;
+			fG|FG.green|fg[/.]green|green)          col[i]='32' ;;
+			fY|FG.yellow|fg[/.]yellow|yellow)       col[i]='33' ;;
+			fB|FG.blue|fg[/.]blue|blue)             col[i]='34' ;;
+			fM|FG.magenta|fg[/.]magenta|magenta)    col[i]='35' ;;
+			fC|FG.cyan|fg[/.]cyan|cyan)             col[i]='36' ;;
+			fW|FG.white|fg[/.]white|white)          col[i]='37' ;;
+			/fg|/FG|/black|/red|/green|/yellow|/blue|/magenta|/cyan|/white)   col[i]='39' ;;
+			bK|BG.back|bg[/.]black|BLACK)           col[i]='40' ;;
+			bR|BG.red|bg[/.]red|RED)                col[i]='41' ;;
+			bG|BG.green|bg[/.]green|GREEN)          col[i]='42' ;;
+			bY|BG.yellow|bg[/.]yellow|YELLOW)       col[i]='43' ;;
+			bB|BG.blue|bg[/.]blue|BLUE)             col[i]='44' ;;
+			bM|BG.magenta|bg[/.]magenta|MAGENTA)    col[i]='45' ;;
+			bC|BG.cyan|bg[/.]cyan|CYAN)             col[i]='46' ;;
+			bW|BG.white|bg[/.]white|WHITE)          col[i]='47' ;;
+			/bg|/BG)                                col[i]='49' ;;
+			FG.li_black|fg[./]li_black)             col[i]='90' ;;
+			FG.li_red|fg[./]li_red)                 col[i]='91' ;;
+			FG.li_green|fg[./]li_green)             col[i]='92' ;;
+			FG.li_yellow|fg[./]li_yellow)           col[i]='93' ;;
+			FG.li_blue|fg[./]li_blue)               col[i]='94' ;;
+			FG.li_magenta|fg[./]li_magenta)         col[i]='95' ;;
+			FG.li_cyan|fg[./]li_cyan)               col[i]='96' ;;
+			FG.li_white|fg[./]li_white)             col[i]='97' ;;
+			BG.li_black|bg[./]li_black)             col[i]='100' ;;
+			BG.li_red|bg[./]li_red)                 col[i]='101' ;;
+			BG.li_green|bg[./]li_green)             col[i]='102' ;;
+			BG.li_yellow|bg[./]li_yellow)           col[i]='103' ;;
+			BG.li_blue|bg[./]li_blue)               col[i]='104' ;;
+			BG.li_magenta|bg[./]li_magenta)         col[i]='105' ;;
+			BG.li_cyan|bg[./]li_cyan)               col[i]='106' ;;
+			BG.li_white|bg[./]li_white)             col[i]='107' ;;
+			FG.da_black|fg[./]da_black)             col[i]='38;5;0'   ;;
+			FG.da_red|fg[./]da_red)                 col[i]='38;5;88'  ;;
+			FG.da_green|fg[./]da_green)             col[i]='38;5;22'  ;;
+			FG.da_yellow|fg[./]da_yellow)           col[i]='38;5;58'  ;;
+			FG.da_blue|fg[./]da_blue)               col[i]='38;5;18'  ;;
+			FG.da_magenta|fg[./]da_magenta)         col[i]='38;5;89'  ;;
+			FG.da_cyan|fg[./]da_cyan)               col[i]='38;5;23'  ;;
+			BG.da_white|bg[./]da_white)             col[i]='48;5;249' ;;
+			BG.da_black|bg[./]da_black)             col[i]='48;5;0'   ;;
+			BG.da_red|bg[./]da_red)                 col[i]='48;5;88'  ;;
+			BG.da_green|bg[./]da_green)             col[i]='48;5;22'  ;;
+			BG.da_yellow|bg[./]da_yellow)           col[i]='48;5;58'  ;;
+			BG.da_blue|bg[./]da_blue)               col[i]='48;5;18'  ;;
+			BG.da_magenta|bg[./]da_magenta)         col[i]='48;5;89'  ;;
+			BG.da_cyan|bg[./]da_cyan)               col[i]='48;5;23'  ;;
+			BG.da_white|bg[./]da_white)             col[i]='48;5;249' ;;
+			*)                                      col[i]="m{${col[i]}}[" ;;
+		esac
+	done
+	local oldIFS=$IFS
+	IFS=';'
+	local col="${col[*]}"
+	IFS=$oldIFS
+	echo -en '\033['${col:-0}'m'
+}
+# recorded: i.black|bhji.red|bhji.green|bhji.yellow|bhji.blue|bhji.magenta|bhji.cyan|bhji.white|bhj
+#------------------------------------------------------------------------------
+# Echo with color tags (like {b}...{/b})
+#
+# echoc text with tags to show
+#
+# Tags are in { }. Any flag recognized by command c (see above) can be used.
+# Use '{{' for '{' and '}}' for '}'.
+#
+# Example:
+#   echoc "This is {red}red{-} text {b}on {bg.blue}blue{/bg} background{/b}..."
+#------------------------------------------------------------------------------
+echoc()
+{
+	local -a opt
+	while [[ $# > 0 ]]; do
+		case "$1" in --) break;; -*) opt+=("$1"); shift; continue;; esac
+		break
+	done
+	local txt="${*}"
+	local out
+	local re='((\{\{|}})|([^{}]+)|\{([^}]*)\})(.*)'
+	while [[ $txt && $txt =~ $re ]]; do
+		out+="${BASH_REMATCH[2]:1}"
+		out+="${BASH_REMATCH[3]}"
+		local col=${BASH_REMATCH[4]}
+		[[ $col ]] && out+="$(c $col)"
+		txt="${BASH_REMATCH[5]}"
+	done
+	out+=$txt
+	out+=$(c reset)
+	echo "${opt[@]}" "$out"
+}
+#------------------------------------------------------------------------------
