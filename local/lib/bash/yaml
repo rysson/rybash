@@ -5,11 +5,13 @@
 #------------------------------------------------------------------------------
 # Parse simple YAML files.
 #
-# yaml_simple_parse <filename>|- [prefix]
+# yaml_simple_parse [-q] <filename>|- [prefix]
 #
 # Parse YAML file and prints bash variable style (sect_var="val")
 # Only simple YAML can be parsed: scalars and mappings.
 # Sequences, link, multilines etc. are not supported.
+#
+# If -q option is used, errors are ignore quiet.
 #
 # Example:
 #   eval $(yaml_simple_parse config.yaml conf_)
@@ -17,6 +19,10 @@
 # Inpirated by https://stackoverflow.com/a/21189044/9935708
 function yaml_simple_parse
 {
+	if [[ "$1" == '-q' ]]; then
+		shift
+		[[ -r "$1" ]] || return 1
+	fi
 	awk -v prefix="$2" -v ap="'" '
 	function join(array, stop, prefix,   i)
 	{

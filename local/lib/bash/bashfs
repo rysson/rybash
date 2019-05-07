@@ -1,0 +1,101 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+include error
+include arg_parse
+
+#------------------------------------------------------------------------------
+# BashFS. Simple filesystem in source bash scripts.
+#------------------------------------------------------------------------------
+_bashfs_file_sep='# --- #'
+_bashfs_file_prefix="$_bashfs_file_sep"' FILE: '
+_bashfs_header='# --- # --- BASH FILE SYSTEM --- # --- #'
+#------------------------------------------------------------------------------
+# Read BashFS file.
+#
+#   bashfs_read [-s <source_script>] <filename>
+#
+# Read `filename` from `source_script` or current script.
+#
+# Example:
+#   bashfs_read myfile.conf > content
+#
+#------------------------------------------------------------------------------
+bashfs_read()
+{
+	local src="$0"
+	local file
+	local op
+	local arg
+	while arg_parse "$@"; do
+		case "$op" in
+			-s|--source)  arg_arg src;;
+			-*)           arg_error; return;;
+		esac
+	done
+	arg_arg file || { error "No filename in ${FUNCNAME[0]}"; return; }
+	sed '/^'"$_bashfs_header"'$/,$ {
+		0,/^'"$_bashfs_file_prefix"' *'"$file"'$/ d
+		/^'"$_bashfs_file_sep"'/,$ d
+		p
+	}
+	d' "$src"
+}
+#------------------------------------------------------------------------------
+bashfs_format()
+{
+	:
+}
+#------------------------------------------------------------------------------
+# Write BashFS file.
+#
+#   bashfs_write [-s <source_script>] <filename>
+#
+# Write `filename` in `source_script` or current script.
+# Format BashFS if was not exist.
+#
+# Example:
+#   cat content | bashfs_write -s script.sh myfile.conf
+#
+#------------------------------------------------------------------------------
+bashfs_write()
+{
+	local src="$0"
+	local file
+	local op
+	local arg
+	while arg_parse "$@"; do
+		echo "OP: '$op'"
+		case "$op" in
+			-s|--source)  arg_arg src;;
+			-*)           arg_error; return;;
+		esac
+	done
+	echo "ARGS: $_arg_rest"
+	arg_arg file || { error "No filename in ${FUNCNAME[0]}"; return; }
+	awk -v file_sep="$_bashfs_file_sep" -v  file_prefix="$_bashfs_file_prefix" \
+		-v header="$_bashfs_header" -v fname="$file" '
+			function print_file() {
+				while(("cat" | getline ln) > 0)
+					print ln
+			}
+			BEGIN {
+				pat_header = "^" header "$"
+				pat_file_sep = "^" file_sep
+				pat_file_prefix = "^" file_prefix " *" fname
+			}
+			$0 ~ pat_header      { bashfs = 1 }
+			$0 ~ pat_file_prefix { if(bashfs) { rmfile = 1; next } }
+			$0 ~ pat_file_sep    {
+				if(rmfile || $0 == file_sep) {
+					print file_prefix fname; print_file(); rmfile = 0
+				}
+			}
+			{ if( ! rmfile) print }
+			END { if(!bashfs) { print ""; print header; print "exit"
+				print file_prefix fname; print_file(); print file_sep
+			}}
+			' "$src" > "$src.new.$$" && mv "$src.new.$$" "$src"
+}
+#------------------------------------------------------------------------------
+

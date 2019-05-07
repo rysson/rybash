@@ -2,6 +2,7 @@
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
 include bool
+include error
 
 #------------------------------------------------------------------------------
 # Parse command line arguments
@@ -12,8 +13,15 @@ include bool
 #       -f|--foo)  arg_arg foo;;
 #       --bar)     arg_optarg bar;;
 #       -b|--baz)  arg_true baz;;
+#       -*)        arg_error;;
 #     esac
 #   done
+#
+#   arg_arg db && echo "File is '$db'"  || error "No database"
+#   while arg_arg; do
+#     echo "Extra posistional argument '$arg'"
+#   done
+#
 #
 # Old example:
 #   while arg_parse "$@"; do
@@ -41,22 +49,27 @@ include bool
 #------------------------------------------------------------------------------
 arg_parse()
 {
-	[[ -z "${_args_copied+x}" ]] && _args=("$@") && _args_copied=y
-	[[ ${#_args[@]} = 0 ]] && return 1
+	[[ -z "${_args_copied+x}" ]] && _args=("$@") && _args_copied=y && \
+		_arg_end= && _arg_rest=()
+	[[ ${#_args[@]} = 0 ]] && { unset _args_copied; return 1; }
 	op="${_args[0]}"
 	_args=("${_args[@]:1}")
 	_arg_shift=
 	_lnarg_shift=
 	arg=
 	optarg=
-	case "$op" in
-		--*=*)  _arg="${op#*=}";    _optarg="$_arg";   op="${op%%=*}";;
-		--*)    _arg="${_args[0]}"; _optarg="$TRUE";   _arg_shift=$TRUE;;
-		-??*)   _arg="${op:2}";     _optarg="${_arg}"; op="${op:0:2}";
-		        _lnarg_shift=$TRUE; _args=("-$_arg" "${_args[@]}");;
-		-?)     _arg="${_args[0]}"; _optarg=;          _arg_shift=$TRUE;;
-		*)      _arg=;              _optarg=;;
-	esac
+	if is_false "$_arg_end"; then
+		case "$op" in
+			--?*=*) _arg="${op#*=}";    _optarg="$_arg";   op="${op%%=*}";;
+			--?*)   _arg="${_args[0]}"; _optarg="$TRUE";   _arg_shift=$TRUE;;
+			--)     _arg_end=$TRUE; _arg_rest=("${_arg_rest[@]}" "${_args[@]}");
+			        _args=(); return 1;;
+			-??*)   _arg="${op:2}";     _optarg="${_arg}"; op="${op:0:2}";
+			        _lnarg_shift=$TRUE; _args=("-$_arg" "${_args[@]}");;
+			-?)     _arg="${_args[0]}"; _optarg=;          _arg_shift=$TRUE;;
+			*)      _arg=;              _optarg=;          _arg_rest+=($op);;
+		esac
+	fi
 }
 #------------------------------------------------------------------------------
 # Prepare arguments to next parsing
@@ -65,23 +78,32 @@ arg_reset()
 	unset _args_copied
 }
 #------------------------------------------------------------------------------
-# Return argument. Shift if neccesery.
+# Return argument (optional or positional).
 #
 # arg_arg [var]
+#
+# If used in arg_parse loop, returns option argument. If Shift if neccesery.
+# If used after arg_aprse loop, returns positional argument.
 #------------------------------------------------------------------------------
 arg_arg()
 {
-	is_true "$_arg_shift" && _args=("${_args[@]:1}")
-	if is_true "$_lnarg_shift"; then
-		case "$op" in
-			-[^-])  [[ $_arg ]] && _args=("${_args[@]:1}");;
-		esac
-		_lnarg_shift=
+	if [[ ${#_args[@]} = 0 ]]; then
+		[[ ${#_arg_rest[@]} = 0 ]] && arg= && return 1
+		arg="${_arg_rest[0]}"
+		_arg_rest=("${_arg_rest[@]:1}")
+	else
+		is_true "$_arg_shift" && _args=("${_args[@]:1}")
+		if is_true "$_lnarg_shift"; then
+			case "$op" in
+				-[^-])  [[ $_arg ]] && _args=("${_args[@]:1}");;
+			esac
+			_lnarg_shift=
+		fi
+		_arg_shift=
+		arg="$_arg"
 	fi
-	_arg_shift=
-	arg="$_arg"
 	local re='^[a-zA-Z_]\w*$'
-	[[ $1 =~ $re ]] && eval "$1='$arg'"
+	[[ $1 =~ $re ]] && eval "$1='$arg'" || :
 }
 #------------------------------------------------------------------------------
 # Return optional argument. Shift if neccesery.
@@ -101,7 +123,7 @@ arg_optarg()
 	[[ $1 =~ $re ]] && eval "$1='$optarg'"
 }
 #------------------------------------------------------------------------------
-# Return bollen arguments (true).
+# Return boolaen arguments (true).
 #
 # arg_true [var]
 #------------------------------------------------------------------------------
@@ -110,5 +132,15 @@ arg_true()
 	arg="$TRUE"
 	local re='^[a-zA-Z_]\w*$'
 	[[ $1 =~ $re ]] && eval "$1='$TRUE'"
+}
+#------------------------------------------------------------------------------
+# Print unkown option error (default $op).
+#
+# arg_error [<argument_name>]
+#------------------------------------------------------------------------------
+arg_error()
+{
+	local a="${1:-$op}"
+	error "Unknow argument '$op' in function '${FUNCNAME[1]}'" >&2
 }
 #------------------------------------------------------------------------------
