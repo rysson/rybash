@@ -1,0 +1,50 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+include arg_parse
+
+#shopt -s expand_aliases
+
+#------------------------------------------------------------------------------
+# Simple error functions.
+#------------------------------------------------------------------------------
+# Print error exit message.
+#
+# errormsg [-e errorcode] [Massage]
+#------------------------------------------------------------------------------
+errormsg()
+{
+	[[ $# = 0 ]] && set -- "Error in '${FUNCNAME[1]}'"
+	local err=1
+	while arg_parse "$@"; do
+		case "$op" in
+			-e|--error)   arg_arg err;;
+			-*)           echo "Unknow argument '$op' in function '${FUNCNAME[0]}'" >&2;;
+		esac
+	done
+	echo "$@" >&2
+	eval return $err
+}
+#------------------------------------------------------------------------------
+# Print error exit message and return with error code.
+#
+# error [-e] [Massage]
+#------------------------------------------------------------------------------
+error()
+{
+	[[ $# = 0 ]] && set -- "Error in '${FUNCNAME[1]}'"
+	errormsg "$@"
+	return
+}
+#------------------------------------------------------------------------------
+# Print error exit message and return with error code.
+#
+# error [-e] [Massage]
+#------------------------------------------------------------------------------
+fatal()
+{
+	[[ $# = 0 ]] && set -- "Fatal error in '${FUNCNAME[1]}'"
+	errormsg "$@"
+	exit $?
+}
+#------------------------------------------------------------------------------
