@@ -71,8 +71,8 @@ mssh_call()
 	case "$1" in @?*) channel="$1"; shift;; esac
 	local ssh_ctl_op=$(_mssh_controlop "$channel")
 	case "$1" in
-		-) ssh $ssh_ctl_op X bash;;
-		*) ssh $ssh_ctl_op X -- "$@";;
+		-|'')  ssh $ssh_ctl_op X bash;;
+		*)     ssh $ssh_ctl_op X -- "$@";;
 	esac
 }
 #------------------------------------------------------------------------------
@@ -87,7 +87,12 @@ mssh_call_bg()
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
 	local ssh_ctl_op=$(_mssh_controlop "$channel")
-	ssh $ssh_ctl_op X -- nohup "$@" \> /dev/null \& echo '$!'
+	set -x
+	case "$1" in
+		-|'')  ssh $ssh_ctl_op X nohup bash \> /dev/null \& echo '$!';;
+		*)     ssh $ssh_ctl_op X -- nohup "$@" \> /dev/null \& echo '$!';;
+	esac
+	set +x
 }
 #------------------------------------------------------------------------------
 mcallbg() { mssh_call_bg "$@"; }
