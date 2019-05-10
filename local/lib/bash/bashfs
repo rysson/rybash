@@ -65,13 +65,11 @@ bashfs_write()
 	local op
 	local arg
 	while arg_parse "$@"; do
-		echo "OP: '$op'"
 		case "$op" in
 			-s|--source)  arg_arg src;;
 			-*)           arg_error; return;;
 		esac
 	done
-	echo "ARGS: $_arg_rest"
 	arg_arg file || { error "No filename in ${FUNCNAME[0]}"; return; }
 	awk -v file_sep="$_bashfs_file_sep" -v  file_prefix="$_bashfs_file_prefix" \
 		-v header="$_bashfs_header" -v fname="$file" '

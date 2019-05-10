@@ -118,9 +118,9 @@ arg_optarg()
 		esac
 		_lnarg_shift=
 	fi
-	optarg="$_optarg"
+	arg="$_optarg"
 	local re='^[a-zA-Z_]\w*$'
-	[[ $1 =~ $re ]] && eval "$1='$optarg'"
+	[[ $1 =~ $re ]] && eval "$1='$arg'"
 }
 #------------------------------------------------------------------------------
 # Return boolaen arguments (true).
@@ -140,7 +140,7 @@ arg_true()
 #------------------------------------------------------------------------------
 arg_error()
 {
-	local a="${1:-$op}"
+	local a="${1:-${op:-$arg}}"
 	error "Unknow argument '$op' in function '${FUNCNAME[1]}'" >&2
 }
 #------------------------------------------------------------------------------
