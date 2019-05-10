@@ -1,0 +1,77 @@
+#!/bin/bash
+
+#venv_debug=echo
+
+function _venv_find
+{
+	if [[ "$1" ]]; then
+		local names=( "$1" )
+	else
+		local names=( .venv .env )
+	fi
+	#echo _venv_find: names="${names[@]}" >& 2
+	local name
+	for name in "${names[@]}"; do
+		if [[ -d "$name/bin" ]]; then
+			echo "$name"
+			return 0
+		fi
+	done
+	#echo _venv_find: FAIL >& 2
+	return 1
+}
+
+function venv_activate
+{
+	local name
+	name=$(_venv_find "$1") || {
+		echo "Missing virtualenv in ${1:-.venv/.env}, try: venv -c"
+		return 1
+	}
+	$venv_debug . "$name/bin/activate"
+	return 0
+}
+
+function venv_create
+{
+	local name
+	name=$(_venv_find "$1") && {
+		echo "Virtualenv '$name' already exists"
+		return 1
+	}
+	name="${1:-.venv}"
+	local python="${args[python]:-python3}"
+	case "$python" in
+		[1-9])       python="python$python" ;;
+		[1-9][0-9])  python="python${python%?}.${python#?}" ;;
+	esac
+	echo "Creating virutalenv '$name' for $python..."
+	$venv_debug virtualenv -p "$python" "$name" && venv_activate "$name"
+}
+
+function venv
+{
+	local cmd='venv_activate'
+	local name=
+	local -A args
+	local o
+	local yes="__YES__"
+	while [[ "$#" > 0 ]]; do
+		case "$1" in
+			--*=*) o="${1#--}"; args[${o%%=*}]="${o#*=}" ;;
+			--*)   o="${1#--}"; args[${o%%=*}]="$yes" ;;
+			-c)    cmd='venv_create' ;;
+			-p[23]|-p[23][0-9])
+			       args[python]="${1#-p}" ;;
+			-*)    echo "Unknown option '$1'"; exit 1 ;;
+			*)     name=$1;
+		esac
+		shift
+	done
+	$cmd "$name"
+}
+
+alias venv.exit='deactivate'
+
+# Tests
+# venv "$@"
