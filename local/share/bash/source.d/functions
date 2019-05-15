@@ -4,25 +4,27 @@
 BASH_LIB_PATH="$HOME/.local/lib/bash"
 BASH_SOURCE_D="$HOME/.local/share/bash/source.d"
 
-declare -A _bash_mod_included
+if [[ ! $_rybash_initialized ]]; then
+	declare -A _rybash_mod_included
 
-include()
-{
-	local name="$1"
-	[[ ${_bash_mod_included[$name]} = 1 ]] && return 0
-	_bash_mod_included[$name]=1
-	if [[ -r "$BASH_LIB_PATH/$name" ]]; then
-		. "$BASH_LIB_PATH/$name"
-	elif [[ -r "$BASH_LIB_PATH/$name.sh" ]]; then
-		. "$BASH_LIB_PATH/$name.sh"
-	elif [[ -r "$BASH_SOURCE_D/$name" ]]; then
-		. "$BASH_SOURCE_D/$name"
-	elif [[ -r "$BASH_SOURCE_D/$name.sh" ]]; then
-		. "$BASH_SOURCE_D/$name.sh"
-	else
-		echo "No bash library '$name'!" >&2
-		_bash_mod_included[$name]=0
-		return 1
-	fi
-}
-
+	include()
+	{
+		local name="$1"
+		[[ ${_rybash_mod_included[$name]} = 1 ]] && return 0
+		_rybash_mod_included[$name]=1
+		if [[ -r "$BASH_LIB_PATH/$name" ]]; then
+			. "$BASH_LIB_PATH/$name"
+		elif [[ -r "$BASH_LIB_PATH/$name.sh" ]]; then
+			. "$BASH_LIB_PATH/$name.sh"
+		elif [[ -r "$BASH_SOURCE_D/$name" ]]; then
+			. "$BASH_SOURCE_D/$name"
+		elif [[ -r "$BASH_SOURCE_D/$name.sh" ]]; then
+			. "$BASH_SOURCE_D/$name.sh"
+		else
+			echo "No bash library '$name'!" >&2
+			_rybash_mod_included[$name]=0
+			return 1
+		fi
+	}
+	_rybash_initialized=y
+fi
