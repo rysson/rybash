@@ -48,3 +48,41 @@ fatal()
 	exit $?
 }
 #------------------------------------------------------------------------------
+# Convert exit code to string (use signal names).
+#
+# error_code [-p] [code [errvar]]
+#
+# Set given eror (or last error) in variable 'err'. Set it in name given in
+# 'errvar', too. Convert to signal name if code > 128. Print code if -p used.
+# Returns true (0).
+#
+# If no error (code is zero) err is empty and returns false (1).
+#
+# Examples:
+#   error_code && echo "Error $err"
+#   error_code $? myerr && echo "Error $myerr"
+#------------------------------------------------------------------------------
+error_code()
+{
+	local _err=$?
+	local errvar
+	local v
+	local show
+	while arg_parse "$@"; do
+		case "$op" in
+			-p|--print) arg_true show;;
+			-*)         arg_error; return;;
+		esac
+	done
+	arg_arg err || err="$_err"
+	arg_arg errvar
+	case "$err" in
+		0)               err=;;
+		129|1[3-9][0-9]) v=$(kill -l "$err" 2>/dev/null) && err="$v";;
+	esac
+	local re='^[a-zA-Z_]\w*$'
+	[[ $errvar =~ $re ]] && eval "$errvar='$err'"
+	is_true $show && echo $err
+	[[ $err  ]]
+}
+#------------------------------------------------------------------------------
