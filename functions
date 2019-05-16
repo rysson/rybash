@@ -4,14 +4,6 @@
 if [[ ! $_rybash_initialized ]]; then
 	declare -A _rybash_mod_included
 
-	rybash()
-	{
-		local cmd="$1"
-		shift
-		rybash-$cmd "$@"
-	}
-	export -f rybash
-
 	rybash-include()
 	{
 		local name="$1"
@@ -31,6 +23,7 @@ if [[ ! $_rybash_initialized ]]; then
 			return 1
 		fi
 	}
+	#export -f rybash-include
 
 	include()
 	{

@@ -7,6 +7,18 @@
 source ${BASH_SOURCE[0]%/*}/env
 export RYBASH
 
+rybash()
+{
+	if [[ ! $_rybash_initialized ]]; then
+		source "$RYBASH/env"
+		source "$RYBASH/functions"
+	fi
+	local cmd="$1"
+	shift
+	rybash-$cmd "$@"
+}
+export -f rybash
+
 source "$RYBASH/functions"
 
 # If not running interactively, don't do anything
