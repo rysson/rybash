@@ -1,8 +1,8 @@
 #!/bin/bash
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
-include bool
-include error
+rybash-include bool
+rybash-include error
 
 #------------------------------------------------------------------------------
 # Parse command line arguments

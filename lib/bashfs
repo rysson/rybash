@@ -1,8 +1,8 @@
 #!/bin/bash
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
-include error
-include arg_parse
+rybash-include error
+rybash-include arg_parse
 
 #------------------------------------------------------------------------------
 # BashFS. Simple filesystem in source bash scripts.

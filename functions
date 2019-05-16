@@ -4,24 +4,38 @@
 if [[ ! $_rybash_initialized ]]; then
 	declare -A _rybash_mod_included
 
-	include()
+	rybash()
+	{
+		local cmd="$1"
+		shift
+		rybash-$cmd "$@"
+	}
+	export -f rybash
+
+	rybash-include()
 	{
 		local name="$1"
 		[[ ${_rybash_mod_included[$name]} = 1 ]] && return 0
 		_rybash_mod_included[$name]=1
 		if [[ -r "$RYBASH_LIB_PATH/$name" ]]; then
-			. "$RYBASH_LIB_PATH/$name"
+			source "$RYBASH_LIB_PATH/$name"
 		elif [[ -r "$RYBASH_LIB_PATH/$name.sh" ]]; then
-			. "$RYBASH_LIB_PATH/$name.sh"
-		elif [[ -r "$RYBASH_SOURCE_D/$name" ]]; then
-			. "$RYBASH_SOURCE_D/$name"
-		elif [[ -r "$RYBASH_SOURCE_D/$name.sh" ]]; then
-			. "$RYBASH_SOURCE_D/$name.sh"
+			source "$RYBASH_LIB_PATH/$name.sh"
+		#elif [[ -r "$RYBASH_SOURCE_D/$name" ]]; then
+		#	source "$RYBASH_SOURCE_D/$name"
+		#elif [[ -r "$RYBASH_SOURCE_D/$name.sh" ]]; then
+		#	source "$RYBASH_SOURCE_D/$name.sh"
 		else
 			echo "No bash library '$name'!" >&2
 			_rybash_mod_included[$name]=0
 			return 1
 		fi
 	}
+
+	include()
+	{
+		rybash-include "$@"
+	}
+
 	_rybash_initialized=y
 fi
