@@ -1,0 +1,10 @@
+# Default config for RyBash
+#
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+#: ${RYBASH:="$HOME/.local/share/rybash"}
+: ${RYBASH:=${BASH_SOURCE[0]%/*}}
+: ${RYBASH_LIB_PATH:="$RYBASH/lib"}
+: ${RYBASH_SOURCE_D:="$RYBASH/interactive"}
+
+# vim:ft=sh:

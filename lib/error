@@ -1,7 +1,7 @@
 #!/bin/bash
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
-include arg_parse
+rybash-include arg_parse
 
 #shopt -s expand_aliases
 

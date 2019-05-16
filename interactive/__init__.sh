@@ -1,15 +1,13 @@
 # Make sure, that your $HOME/.bashrc has a line:
 # source $HOME/.local/share/rybash/bashrc.add.sourced
-
-# Default config
-: ${RYBASH_LIB_PATH:="$HOME/.local/lib/bash"}
-: ${RYBASH_SOURCE_D:="$HOME/.local/share/bash/source.d"}
+#
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
 # More bash settings
 _shopt=$(shopt -p nullglob)
 shopt -s nullglob
-for f in "$RYBASH_SOURCE_D"/*; do
-  . "$f"
+for f in "$RYBASH_SOURCE_D"/[^_]*; do
+  source "$f"
 done
 $_shopt  # restore nullglob
 
