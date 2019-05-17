@@ -1,8 +1,9 @@
-#!/bin/bash
+# Base functions
+#
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
 if [[ ! $_rybash_initialized ]]; then
-	declare -A _rybash_mod_included
+	declare -gA _rybash_mod_included
 
 	rybash-include()
 	{
@@ -18,7 +19,7 @@ if [[ ! $_rybash_initialized ]]; then
 		#elif [[ -r "$RYBASH_SOURCE_D/$name.sh" ]]; then
 		#	source "$RYBASH_SOURCE_D/$name.sh"
 		else
-			echo "No bash library '$name'!" >&2
+			echo "No RyBash module '$name'!" >&2
 			_rybash_mod_included[$name]=0
 			return 1
 		fi
@@ -32,3 +33,5 @@ if [[ ! $_rybash_initialized ]]; then
 
 	_rybash_initialized=y
 fi
+
+# vim:ft=bash:

@@ -13,6 +13,7 @@ rybash()
 		source "$RYBASH/env"
 		source "$RYBASH/functions"
 	fi
+	[[ $# = 0 ]] && return
 	local cmd="$1"
 	shift
 	rybash-$cmd "$@"
@@ -27,3 +28,4 @@ case $- in
 	*i*) source "$RYBASH_SOURCE_D/__init__.sh" ;;
 esac
 
+# vim:ft=bash:

@@ -11,4 +11,4 @@ for f in "$RYBASH_SOURCE_D"/[^_]*; do
 done
 $_shopt  # restore nullglob
 
-# vim:ft=sh:
+# vim:ft=bash:
