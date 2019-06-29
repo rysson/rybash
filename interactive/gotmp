@@ -1,0 +1,4 @@
+#!/bin/bash
+
+alias gotmp='cd $(mktemp -d --tmpdir zz-XXXXXXX)'
+
