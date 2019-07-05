@@ -46,7 +46,11 @@ function venv_create
 		[1-9][0-9])  python="python${python%?}.${python#?}" ;;
 	esac
 	echo "Creating virutalenv '$name' for $python..."
-	$venv_debug virtualenv -p "$python" "$name" && venv_activate "$name"
+	if [[ ${args[python]:+x} ]]; then
+		$venv_debug virtualenv -p "$python" "$name" && venv_activate "$name"
+	else
+		$venv_debug "$python" -m venv "$name" && venv_activate "$name"
+	fi
 }
 
 function venv
@@ -63,7 +67,7 @@ function venv
 			-c)    cmd='venv_create' ;;
 			-p[23]|-p[23][0-9])
 			       args[python]="${1#-p}" ;;
-			-*)    echo "Unknown option '$1'"; exit 1 ;;
+			-*)    echo "Unknown option '$1'"; return 1 ;;
 			*)     name=$1;
 		esac
 		shift
