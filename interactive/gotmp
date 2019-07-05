@@ -2,3 +2,20 @@
 
 alias gotmp='cd $(mktemp -d --tmpdir zz-XXXXXXX)'
 
+rmtmp()
+{
+	local path="$(pwd)"
+	local name="${path#/*/}"
+	name="${name%%/*}"
+	if [[ ${path#/tmp/zz-} = ${path} || ! $name ]]; then
+		echo "Not in temp directory"
+		return 1
+	fi
+
+	local ans
+	read -p "Removing /tmp/$name. Are you sure [Y/n]? " ans
+	case "$ans" in
+		""|[YyTtJj]) cd /tmp && rm -rf /tmp/$name;;
+	esac
+}
+
