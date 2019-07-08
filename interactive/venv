@@ -45,12 +45,35 @@ function venv_create
 		[1-9])       python="python$python" ;;
 		[1-9][0-9])  python="python${python%?}.${python#?}" ;;
 	esac
-	echo "Creating virutalenv '$name' for $python..."
-	if [[ ${args[python]:+x} ]]; then
-		$venv_debug virtualenv -p "$python" "$name" && venv_activate "$name"
-	else
-		$venv_debug "$python" -m venv "$name" && venv_activate "$name"
-	fi
+	# Detect method (venv / virtualenv)
+	local method='virtualenv'
+	case "$python" in
+		*python3.5)
+			if grep -qs 'pip._internal' /usr/lib/python3.5/ensurepip/__init__.py; then
+				method='venv'
+			else
+				echo "To use 'python3.5 -m venv' read ${0%/*}/README-venv.md"
+			fi ;;
+		*python3.6)
+			if [[ -d '/usr/lib/python3.6/distutils/command' ]]; then
+				method='venv'
+			else
+				echo "To use 'python3.6 -m venv' read ${0%/*}/README-venv.md"
+			fi ;;
+		*python3.7)
+			case "$(python3 --version)" in 'Python 3.7.'*) method='venv';; esac ;;
+		''|*python3)
+			method='venv' ;;
+	esac
+	echo "Creating $method '$name' for $python..."
+	case "$method" in
+		venv)
+			$venv_debug "$python" -m venv "$name" && venv_activate "$name"
+			;;
+		*)
+			$venv_debug virtualenv -p "$python" "$name" && venv_activate "$name"
+			;;
+	esac
 }
 
 function venv

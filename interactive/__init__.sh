@@ -7,7 +7,10 @@
 _shopt=$(shopt -p nullglob)
 shopt -s nullglob
 for f in "$RYBASH_SOURCE_D"/[^_]*; do
-  source "$f"
+	case "$f" in
+		README*.md|*/README*.md) ;;
+		*) source "$f" ;;
+	esac
 done
 $_shopt  # restore nullglob
 
