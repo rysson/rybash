@@ -3,8 +3,35 @@
 Python
 ======
 
+Python in Debian Buster.
+
+
 Old Python 3
 ------------
+
+### Python 3.8
+
+When Debian Buster is released Python 3.8 was available in Sid (as beta 2).
+Maybe later you can find it in Debian Bullseye (testing).
+
+You can add Sid to your `/etc/apt/source.list` and change `/etc/apt/preferences`
+(see: https://wiki.debian.org/AptPreferences).
+
+Or download from https://packages.debian.org/sid/python3.8 packages:
+* libpython3.8-minimal_3.8.0_b2-4_amd64.deb
+* libpython3.8-stdlib_3.8.0_b2-4_amd64.deb
+* python3.8_3.8.0_b2-4_amd64.deb
+* python3.8-minimal_3.8.0_b2-4_amd64.deb
+* python3.8-venv_3.8.0_b2-4_amd64.deb
+
+Fix distutils package (you have to have installed python3.7 and python-distutils):
+```bash
+sudo apt install python3.7-minimal python3-venv python3-distutils
+sudo mv /usr/lib/python3.8/distutils/ /usr/lib/python3.8/distutils/__distutils
+sudo ln -s ../python3.7/distutils/ /usr/lib/python3.8/distutils
+```
+
+
 
 ### Python 3.6
 

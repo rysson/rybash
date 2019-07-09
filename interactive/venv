@@ -34,6 +34,7 @@ function venv_activate
 
 function venv_create
 {
+	local python_path
 	local name
 	name=$(_venv_find "$1") && {
 		echo "Virtualenv '$name' already exists"
@@ -45,6 +46,10 @@ function venv_create
 		[1-9])       python="python$python" ;;
 		[1-9][0-9])  python="python${python%?}.${python#?}" ;;
 	esac
+	case "$python" in
+		*/*) python_path="$python" ;;
+		*)   python_path="/usr/lib/$python" ;;
+	esac
 	# Detect method (venv / virtualenv)
 	local method='virtualenv'
 	case "$python" in
@@ -54,11 +59,11 @@ function venv_create
 			else
 				echo "To use 'python3.5 -m venv' read ${0%/*}/README-venv.md"
 			fi ;;
-		*python3.6)
-			if [[ -d '/usr/lib/python3.6/distutils/command' ]]; then
+		*python3.[68])
+			if [[ -d "$python_path/distutils/command" ]]; then
 				method='venv'
 			else
-				echo "To use 'python3.6 -m venv' read ${0%/*}/README-venv.md"
+				echo "To use '$python -m venv' read ${0%/*}/README-venv.md"
 			fi ;;
 		*python3.7)
 			case "$(python3 --version)" in 'Python 3.7.'*) method='venv';; esac ;;
