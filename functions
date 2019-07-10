@@ -14,10 +14,6 @@ if [[ ! $_rybash_initialized ]]; then
 			source "$RYBASH_LIB_PATH/$name"
 		elif [[ -r "$RYBASH_LIB_PATH/$name.sh" ]]; then
 			source "$RYBASH_LIB_PATH/$name.sh"
-		#elif [[ -r "$RYBASH_SOURCE_D/$name" ]]; then
-		#	source "$RYBASH_SOURCE_D/$name"
-		#elif [[ -r "$RYBASH_SOURCE_D/$name.sh" ]]; then
-		#	source "$RYBASH_SOURCE_D/$name.sh"
 		else
 			echo "No RyBash module '$name'!" >&2
 			_rybash_mod_included[$name]=0

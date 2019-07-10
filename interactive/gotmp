@@ -1,21 +1,73 @@
 #!/bin/bash
 
-alias gotmp='cd $(mktemp -d --tmpdir zz-XXXXXXX)'
+_rybash_gotmp_listfile="$HOME/.cache/rybash/gotmp.list"
 
-rmtmp()
+_gotmp_create()
+{
+	local path="$(mktemp -d --tmpdir zz-XXXXXXX)"
+	mkdir -p "${_rybash_gotmp_listfile%/*}"
+	touch "$_rybash_gotmp_listfile"
+	echo "$path" >> "$_rybash_gotmp_listfile"
+	sed -i -e '100,$ d' "$_rybash_gotmp_listfile"
+	echo -n "$path"
+}
+
+_gotmp_current()
 {
 	local path="$(pwd)"
 	local name="${path#/*/}"
 	name="${name%%/*}"
 	if [[ ${path#/tmp/zz-} = ${path} || ! $name ]]; then
-		echo "Not in temp directory"
 		return 1
 	fi
+	echo "/tmp/$name"
+}
+
+rmtmp()
+{
+	local name=$(_gotmp_current) || {
+		echo "Not in temp directory"
+		return 1
+	}
 
 	local ans
-	read -p "Removing /tmp/$name. Are you sure [Y/n]? " ans
+	read -p "Removing $name. Are you sure [Y/n]? " ans
 	case "$ans" in
-		""|[YyTtJj]) cd /tmp && rm -rf /tmp/$name;;
+		""|[YyTtJj]) cd /tmp && rm -rf $name; sed -i '\+^'"$name"'$+ d' "$_rybash_gotmp_listfile"; ;;
 	esac
 }
 
+lasttmp()
+{
+	local n=1
+	case "$1" in
+		[1-9]|[1-9][0-9]) n="$1"; shift;;
+	esac
+	local path="$(tail -$n "$_rybash_gotmp_listfile" | head -1)"
+	echo "n='$n' path='$path'"
+	if [[ ! "$path" ]]; then
+		echo "No tmp history at $n"
+	elif [[ ! -d "$path" ]]; then
+		echo "Tmp $path doesn't exist"
+	else
+		cd "$path"
+	fi
+}
+
+lstmp()
+{
+	#awk -vt=9 '{o[NR%t]=$0}END{i=(NR<t?0:NR);do print ((NR==i) ? t : (NR%t-i%t))": "o[++i%t];while(i%t!=NR%t)}' \
+	#	"$_rybash_gotmp_listfile"
+	(
+		rybash include color
+		cur=$(_gotmp_current)
+		i=1
+		tail -9 "$_rybash_gotmp_listfile" | tac | while read p; do
+		  { [[ $p = $cur ]] && col='{yellow}'; } || { [[ -d $p ]] && col='{}'; } || col='{dim}'
+			echoc "$i: $col$p{-}"
+			let i++
+		done
+	)
+}
+
+alias gotmp='cd $(_gotmp_create)'
