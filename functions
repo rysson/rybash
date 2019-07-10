@@ -27,6 +27,12 @@ if [[ ! $_rybash_initialized ]]; then
 		rybash-include "$@"
 	}
 
+	rybash-reload()
+	{
+		_rybash_initialized=
+		source "${RYBASH}/rybash.sh"
+	}
+
 	_rybash_initialized=y
 fi
 

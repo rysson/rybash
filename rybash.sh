@@ -4,8 +4,10 @@
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
 # Default config
-source ${BASH_SOURCE[0]%/*}/env
+source $(dirname "${BASH_SOURCE[0]}")/env
 export RYBASH
+# always reinitialize
+_rybash_initialized=
 
 rybash()
 {
