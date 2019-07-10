@@ -33,7 +33,9 @@ rmtmp()
 	local ans
 	read -p "Removing $name. Are you sure [Y/n]? " ans
 	case "$ans" in
-		""|[YyTtJj]) cd /tmp && rm -rf $name; sed -i '\+^'"$name"'$+ d' "$_rybash_gotmp_listfile"; ;;
+		""|[YyTtJj])
+			cd /tmp && rm -rf $name;
+			[[ -f "$_rybash_gotmp_listfile" ]] && sed -i '\+^'"$name"'$+ d' "$_rybash_gotmp_listfile";;
 	esac
 }
 
@@ -43,6 +45,7 @@ lasttmp()
 	case "$1" in
 		[1-9]|[1-9][0-9]) n="$1"; shift;;
 	esac
+	[[ -f "$_rybash_gotmp_listfile" ]] || { echo "No tmp history"; return 1; }
 	local path="$(tail -$n "$_rybash_gotmp_listfile" | head -1)"
 	echo "n='$n' path='$path'"
 	if [[ ! "$path" ]]; then
@@ -58,6 +61,7 @@ lstmp()
 {
 	#awk -vt=9 '{o[NR%t]=$0}END{i=(NR<t?0:NR);do print ((NR==i) ? t : (NR%t-i%t))": "o[++i%t];while(i%t!=NR%t)}' \
 	#	"$_rybash_gotmp_listfile"
+	[[ -f "$_rybash_gotmp_listfile" ]] || { echo "No tmp history"; return 1; }
 	(
 		rybash include color
 		cur=$(_gotmp_current)
