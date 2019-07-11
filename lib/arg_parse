@@ -32,6 +32,18 @@ rybash-include error
 #     esac
 #   done
 #------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Make all variables local
+#
+# eval $(arg_local)
+#------------------------------------------------------------------------------
+arg_local()
+{
+	echo 'local _arg arg _arg_end _arg_rest _args _args_copied _arg_shift _lnarg_shift op _optarg optarg'
+}
+#------------------------------------------------------------------------------
 # Parse arguments
 #
 # arg_parse command-line-arguments...
@@ -140,7 +152,9 @@ arg_true()
 #------------------------------------------------------------------------------
 arg_error()
 {
+	local handle='error'
+	if [[ $1 = '--fatal' ]]; then shift; handle='fatal'; fi
 	local a="${1:-${op:-$arg}}"
-	error "Unknow argument '$op' in function '${FUNCNAME[1]}'" >&2
+	$handle "Unknow argument '$a' in function '${FUNCNAME[1]}'" >&2
 }
 #------------------------------------------------------------------------------

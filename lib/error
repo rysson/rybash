@@ -16,6 +16,7 @@ errormsg()
 {
 	[[ $# = 0 ]] && set -- "Error in '${FUNCNAME[1]}'"
 	local err=1
+	eval $(arg_local)
 	while arg_parse "$@"; do
 		case "$op" in
 			-e|--error)   arg_arg err;;
@@ -68,6 +69,7 @@ error_code()
 	local errvar
 	local v
 	local show
+	eval $(arg_local)
 	while arg_parse "$@"; do
 		case "$op" in
 			-p|--print) arg_true show;;

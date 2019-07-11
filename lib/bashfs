@@ -25,8 +25,7 @@ bashfs_read()
 {
 	local src="$0"
 	local file
-	local op
-	local arg
+	eval $(arg_local)
 	while arg_parse "$@"; do
 		case "$op" in
 			-s|--source)  arg_arg src;;
@@ -62,8 +61,7 @@ bashfs_write()
 {
 	local src="$0"
 	local file
-	local op
-	local arg
+	eval $(arg_local)
 	while arg_parse "$@"; do
 		case "$op" in
 			-s|--source)  arg_arg src;;
