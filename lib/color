@@ -3,8 +3,11 @@
 
 
 if [ -z "$_stdout_piped" ]; then
-	[ -t 1 ] && _stdout_piped= || _stdout_piped=y
+	[[ -t 1 ]] && _stdout_piped= || _stdout_piped=y
 fi
+
+#TODO:  add option for output descriptor (and check the descriptor)
+
 
 #------------------------------------------------------------------------------
 # Print color sequence
