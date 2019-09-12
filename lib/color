@@ -126,9 +126,11 @@ c()
 echoc()
 {
 	local -a opt
-	while [[ $# > 0 ]]; do
-		case "$1" in --) break;; -*) opt+=("$1"); shift; continue;; esac
-		break
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			-[neE]|-[neE][neE]|-[neE][neE][neE]) opt+=("$1"); shift;;
+			*) break;;
+		esac
 	done
 	local txt="${*}"
 	local out

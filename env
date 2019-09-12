@@ -7,4 +7,7 @@
 : ${RYBASH_LIB_PATH:="$RYBASH/lib"}
 : ${RYBASH_SOURCE_D:="$RYBASH/interactive"}
 
+RYBASH_VERSION='0.1.3'
+RYBASH_VERSION_INFO=( 0 1 3 )
+
 # vim:ft=sh:
