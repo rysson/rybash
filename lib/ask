@@ -1,0 +1,115 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+rybash-include arg_parse
+rybash-include bool
+rybash-include color
+
+
+#------------------------------------------------------------------------------
+#
+#
+#
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+# Set non interactive mode (ask will return default value)
+#------------------------------------------------------------------------------
+ask_non_interactive()
+{
+	ask_is_non_interactive=$TRUE
+}
+#------------------------------------------------------------------------------
+# Ask user (if interactive mode)
+#
+# ask OPTION PROMPT [VARNAME [DEFAULT]]
+#
+# OPTION:
+#  -b, --bool [Y|N]    yes/no value
+#  -v, --value VALUE   default value
+#
+#------------------------------------------------------------------------------
+ask()
+{
+	local prompt varname val showvalue defvalue defdef bin list return_letter
+	local -A dict
+	eval $(arg_local)
+	while arg_parse "$@"; do
+		case "$op" in
+			#-v|--value)  arg_arg defvalue; showvalue="$defvalue"; defdef=$TRUE;;
+			-b|--bool|--boolean|--binary)
+				arg_optarg bin 'ask'; defdef=$TRUE; return_letter=$TRUE
+				_ask_build_list "Yes/No"
+				case "$bin" in
+					[YyJjTt]) showvalue='Y/n'; defvalue='Y';;
+					[Nn])     showvalue='y/N'; defvalue='N';;
+					*)        showvalue='y/n'; defvalue='';;
+				esac
+				dict[t]='yes'; dict[j]='yes'
+				;;
+			-c|--choose)               arg_arg showvalue; _ask_build_list;;
+			-C|--choose-single-letter) arg_arg showvalue; _ask_build_list; return_letter=$TRUE;;
+		esac
+	done
+	arg_arg prompt
+	arg_arg varname
+	arg_exists && defdef=$TRUE && arg_arg defvalue
+	# [[ -t 2 ]] || echo 'WARNING: stdout is not a terminal' >&2
+	[[ $varname ]] && ! is_true "$defdef" && eval defvalue='$'"$varname"
+	[[ $showvalue ]] || showvalue="$defvalue"
+	# DEBUG:
+	#   declare -p dict
+	#   echo "$(c red)!!!$(c) varname='$varname', prompt='$prompt', defvalue='$defvalue'"
+	if [[ $ask_is_non_interactive ]]; then
+		val="$defvalue"
+	else
+		while :; do
+			read -p "$prompt $(c dim)[$(c / cyan)$showvalue$(c / dim)]$(c): " val
+			[[ $val ]] || val="$defvalue"
+			if [[ ${#list[@]} != 0 ]]; then
+				val="${val,,}"
+				if [[ ${dict[$val]+x} ]]; then
+					val="${dict[$val]}"
+					is_true "$return_letter" && val="${val:0:1}" && val="${val^^}"
+					break
+				fi
+				for item in "${list[@]}"; do
+					item="${item,,}"
+					if [[ $item = $val ]]; then
+						is_true "$return_letter" && val="${val:0:1}" && val="${val^^}"
+						break 2
+					fi
+				done
+				error "You should answer one of: ${list[@]}"
+			#elif [[ $bin ]]; then
+			#	case "$val" in
+			#		[YyJjTt]) val='Y'; break;;
+			#		[Nn])     val='N'; break;;
+			#		*)        error "You should answer Y or N";;
+			#	esac
+			else
+				break
+			fi
+		done
+	fi
+	if [[ $varname ]]; then
+		eval "$varname='$val'"
+	else
+		echo -n "$val"
+	fi
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Helper. Build list & dict of choises.
+_ask_build_list()
+{
+	IFS='/' read -ra list <<< "${1-$showvalue}"
+	for item in "${list[@]}"; do
+		case "$item" in [[:upper:]]*) defvalue="$item"; defdef=$TRUE; break;; esac
+	done
+	for item in "${list[@]}"; do
+		item="${item,,}"
+		[[ ${dict[${item:0:1}]+x} ]] || dict[${item:0:1}]="$item"
+	done
+}
+#------------------------------------------------------------------------------
