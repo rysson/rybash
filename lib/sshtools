@@ -14,7 +14,7 @@ mssh_enter()
 {
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
-	local ssh_ctl_op=$(_mssh_controlop "$channel")
+	local ssh_ctl_op=$(mssh_controlop "$channel")
 	ssh $ssh_ctl_op -MNf "$@"
 }
 #------------------------------------------------------------------------------
@@ -26,7 +26,7 @@ mssh_enter_pass()
 {
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
-	local ssh_ctl_op=$(_mssh_controlop "$channel")
+	local ssh_ctl_op=$(mssh_controlop "$channel")
 	if [[ ! "$SSHPASS" ]]; then
 		local SSHPASS
     stty -echo; read -s -p "Enter possword for ssh $@: " SSHPASS; stty echo;
@@ -43,7 +43,7 @@ mssh_exit()
 {
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
-	local ssh_ctl_op=$(_mssh_controlop "$channel")
+	local ssh_ctl_op=$(mssh_controlop "$channel")
 	[[ $# = 0 ]] && set -- X
 	ssh $ssh_ctl_op -O exit "$@" 2> /dev/null
 }
@@ -56,7 +56,7 @@ mssh()
 {
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
-	local ssh_ctl_op=$(_mssh_controlop "$channel")
+	local ssh_ctl_op=$(mssh_controlop "$channel")
 	ssh $ssh_ctl_op "$@"
 }
 #------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ mssh_call()
 {
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
-	local ssh_ctl_op=$(_mssh_controlop "$channel")
+	local ssh_ctl_op=$(mssh_controlop "$channel")
 	case "$1" in
 		-|'')  ssh $ssh_ctl_op X bash;;
 		*)     ssh $ssh_ctl_op X -- "$@";;
@@ -86,7 +86,7 @@ mssh_call_bg()
 {
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
-	local ssh_ctl_op=$(_mssh_controlop "$channel")
+	local ssh_ctl_op=$(mssh_controlop "$channel")
 	set -x
 	case "$1" in
 		-|'')  ssh $ssh_ctl_op X nohup bash \> /dev/null \& echo '$!';;
@@ -105,12 +105,12 @@ mscp()
 {
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
-	local ssh_ctl_op=$(_mssh_controlop "$channel")
+	local ssh_ctl_op=$(mssh_controlop "$channel")
 	scp $ssh_ctl_op "$@"
 }
 #------------------------------------------------------------------------------
 # Helper. Get channel scket name.
-_mssh_controlop()
+mssh_controlop()
 {
 	local channel="${1:-main}"
 	case "$channel" in @?*) channel="${1#?}";; esac
