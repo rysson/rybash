@@ -3,6 +3,12 @@
 #
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
+[[ $1 = force ]] && {
+  unset RYBASH
+  unset RYBASH_LIB_PATH
+  unset RYBASH_SOURCE_D
+}
+
 # Default config
 source $(dirname "${BASH_SOURCE[0]}")/env
 export RYBASH

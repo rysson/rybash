@@ -69,7 +69,7 @@ ask()
 			[[ $val ]] || val="$defvalue"
 			if [[ ${#list[@]} != 0 ]]; then
 				val="${val,,}"
-				if [[ ${dict[$val]+x} ]]; then
+				if [[ $val && ${dict[$val]+x} ]]; then
 					val="${dict[$val]}"
 					is_true "$return_letter" && val="${val:0:1}" && val="${val^^}"
 					break
