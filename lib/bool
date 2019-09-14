@@ -6,15 +6,36 @@
 TRUE='##TRUE##'
 FALSE=''
 #------------------------------------------------------------------------------
-# true if true
-is_true()
+# true if not defined (like Python: val is None)
+is_none()
 {
-	[[ "$TRUE" = "$1" ]]
+	[[ -z ${1+_} ]]
 }
 #------------------------------------------------------------------------------
-# true if false
+# true if is exactly true (like Python: val is True)
+is_true()
+{
+	[[ $TRUE = $1 ]]
+}
+#------------------------------------------------------------------------------
+# true if exactly false (like Python: val is False)
 is_false()
 {
-	[[ "$TRUE" != "$1" ]]
+	[[ $FALSE = $1 ]]
+}
+#------------------------------------------------------------------------------
+# true if is exactly true (like Python: bool(val), where val is str)
+if_true()
+{
+	case "$1" in
+		''|[nN]*) false;;
+		*)        true;;
+	esac
+}
+#------------------------------------------------------------------------------
+# true if false (line Python: not val, where val is str)
+if_false()
+{
+	! if_true "$1"
 }
 #------------------------------------------------------------------------------
