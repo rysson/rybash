@@ -44,7 +44,7 @@ mssh_exit()
 	local channel
 	case "$1" in @?*) channel="$1"; shift;; esac
 	local ssh_ctl_op=$(mssh_controlop "$channel")
-	[[ $# = 0 ]] && set -- X
+	[[ $# = 0 ]] && set -- NOHOST
 	ssh $ssh_ctl_op -O exit "$@" 2> /dev/null
 }
 #------------------------------------------------------------------------------
@@ -71,8 +71,8 @@ mssh_call()
 	case "$1" in @?*) channel="$1"; shift;; esac
 	local ssh_ctl_op=$(mssh_controlop "$channel")
 	case "$1" in
-		-|'')  ssh $ssh_ctl_op X bash;;
-		*)     ssh $ssh_ctl_op X -- "$@";;
+		-|'')  ssh $ssh_ctl_op NOHOST bash;;
+		*)     ssh $ssh_ctl_op NOHOST -- "$@";;
 	esac
 }
 #------------------------------------------------------------------------------
@@ -89,8 +89,8 @@ mssh_call_bg()
 	local ssh_ctl_op=$(mssh_controlop "$channel")
 	set -x
 	case "$1" in
-		-|'')  ssh $ssh_ctl_op X nohup bash \> /dev/null \& echo '$!';;
-		*)     ssh $ssh_ctl_op X -- nohup "$@" \> /dev/null \& echo '$!';;
+		-|'')  ssh $ssh_ctl_op NOHOST nohup bash \> /dev/null \& echo '$!';;
+		*)     ssh $ssh_ctl_op NOHOST -- nohup "$@" \> /dev/null \& echo '$!';;
 	esac
 	set +x
 }
