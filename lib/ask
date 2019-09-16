@@ -23,11 +23,12 @@ ask_non_interactive()
 #------------------------------------------------------------------------------
 # Ask user (if interactive mode)
 #
-# ask OPTION PROMPT [VARNAME [DEFAULT]]
+# ask [OPTION] PROMPT [VARNAME [DEFAULT]]
 #
 # OPTION:
-#  -b, --bool [Y|N]    yes/no value
-#  -v, --value VALUE   default value
+#  -b, --bool [Y|N]                  yes/no value
+#  -c, --choose ITEMS                aa/bb/cc... item list, returns "aa"
+#  -C, --choose-single-letter ITEMS  aa/bb/cc... item list, returns "A"
 #
 #------------------------------------------------------------------------------
 ask()
@@ -50,6 +51,7 @@ ask()
 				;;
 			-c|--choose)               arg_arg showvalue; _ask_build_list;;
 			-C|--choose-single-letter) arg_arg showvalue; _ask_build_list; return_letter=$TRUE;;
+			--help)                    _ask_help; return 0;;
 		esac
 	done
 	arg_arg prompt
@@ -111,5 +113,20 @@ _ask_build_list()
 		item="${item,,}"
 		[[ ${dict[${item:0:1}]+x} ]] || dict[${item:0:1}]="$item"
 	done
+}
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# Helper. Print help.
+_ask_help()
+{
+	cat << EOF
+ask [OPTION] TITLE [VARNAME [DEFAULT]]
+
+OPTION:
+  -b, --bool [Y|N]    yes/no value
+  -c, --choose ITEMS  aa/bb/cc... item list, returns "aa"
+  -C, --choose-single-letter ITEMS
+                      aa/bb/cc... item list, returns "A"
+  --help              print this help page
+EOF
 }
 #------------------------------------------------------------------------------
