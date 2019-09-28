@@ -1,0 +1,133 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+#------------------------------------------------------------------------------
+# Trap helpers.
+#
+# Handles RETURN and EXIT traps.
+# RETURN traps can be stacked and they are invoked only once on return from
+# function where they was declared. See example.
+# Even if you exit (or break) the script return handlers will be invoked.
+#
+# Use `trap_return EXPR` instead `trap EXPT RETURN`.
+# Use `trap_exit EXPR` instead `trap EXPT EXIT`.
+#
+#
+# Example:
+#
+#   trap_exit 'echo exiting!'
+#   trap_exit 'echo cleanup'
+#
+#   aa() {
+#     trap_return 'echo return trap aa:1'
+#     trap_return 'echo return trap aa:2'
+#     echo returning from aa
+#   }
+#
+#   bb() {
+#     aa
+#     echo returning from bb
+#   }
+#
+#   cc() {
+#     trap_return 'echo return trap cc'
+#     bb
+#     echo returning from cc
+#   }
+#
+#   cc
+#
+#   # Result:
+#   #  returning from aa
+#   #  return trap aa:2
+#   #  return trap aa:1
+#   #  returning from bb
+#   #  returning from cc
+#   #  return trap cc
+#   #  cleanup
+#   #  exiting!
+#
+#------------------------------------------------------------------------------
+# Handlers arrays
+declare -a trap_return_handlers   # [] = ( FUNC:::EXPR )
+declare -a trap_exit_handlers     # [] = ( EXPR )
+#------------------------------------------------------------------------------
+# Get handler from bash `trap`.
+#
+# trap_get SIGNAME
+#
+# SIGNAME    signal name (like INT or SIGINT)
+#------------------------------------------------------------------------------
+trap_get()
+{
+	local sig="$1"
+	trap | sed -En '/\b(SIG)?'"$sig"'$/ { s/^.*--\s+(['"'"'])?(.*?)\1\s+SIG\w+$/\2/; p; }'
+}
+#------------------------------------------------------------------------------
+# Internal. RETURN trap master handler.
+#------------------------------------------------------------------------------
+_trap_return()
+{
+	local func="${FUNCNAME[1]}"
+	while [[ ${#trap_return_handlers[@]} -gt 0 ]]; do
+		local expr="${trap_return_handlers[-1]}"
+		if [[ $expr ]]; then
+			local f="${expr%%:::*}"
+			if [[ $func = $f ]]; then
+				expr="${expr#*:::}"
+				unset 'trap_return_handlers[-1]'
+				[[ $expr ]] && eval "$expr"
+			else
+				break
+			fi
+		else
+			unset 'trap_return_handlers[-1]'  # to skip RETURN from trap_return()
+		fi
+	done
+	[[ ${#trap_return_handlers[@]} -gt 0 ]] && trap _trap_return RETURN || trap '' RETURN
+}
+#------------------------------------------------------------------------------
+# Internal. EXIT trap master handler.
+#------------------------------------------------------------------------------
+_trap_exit()
+{
+	# Call RETURN handlers
+	while [[ ${#trap_return_handlers[@]} -gt 0 ]]; do
+		local expr="${trap_return_handlers[-1]}"
+		expr="${expr#*:::}"
+		unset 'trap_return_handlers[-1]'
+		[[ $expr ]] && eval "$expr"
+	done
+	# Call EXIT handlers
+	while [[ ${#trap_exit_handlers[@]} -gt 0 ]]; do
+		local expr="${trap_exit_handlers[-1]}"
+		unset 'trap_exit_handlers[-1]'
+		[[ $expr ]] && eval "$expr"
+	done
+}
+#------------------------------------------------------------------------------
+# Add RETURN trap handler.
+#
+# trap_return EXPR
+#
+#------------------------------------------------------------------------------
+trap_return()
+{
+	local func="${FUNCNAME[1]}"
+	trap_return_handlers+=( "$func:::$1" )
+	trap_return_handlers+=( "" )     # to skip RETURN from trap_return()
+	trap _trap_return RETURN
+	trap _trap_exit EXIT
+}
+#------------------------------------------------------------------------------
+# Add EXIT trap handler.
+#
+# trap_return EXPR
+#
+#------------------------------------------------------------------------------
+trap_exit()
+{
+	trap_exit_handlers+=( "$1" )
+	trap _trap_exit EXIT
+}
+#------------------------------------------------------------------------------
