@@ -33,20 +33,32 @@ function yaml_simple_parse
 	}
 	BEGIN { level=0; }
 	{
-		if (!match($0, /^(\s*):?([^:#]+)\s*:\s*(!\w+)?\s*(.*)\s*$/, r))
+		if (!match($0, /^(\s*):?(([^:#]+)\s*:|-)\s*(!\w+)?\s*(.*)\s*$/, r))
 			next
 		s = r[1]
 		if (length(s) > length(indent[level]))
 			indent[++level] = s
 		else while (length(s) < length(indent[level]))
 			level--
-		var = r[2]; type = r[3]; val = r[4]
+		var = r[3]; type = r[4]; val = r[5]
 		if (match(val, /^".*"$|^'"'"'.*'"'"'$/))
 			val = substr(val, 2, length(val) - 2)
 		sects[level + 1] = var
 		if (type == "!ENV") sp = "\""; else sp = ap
 		if (val != "")
-			printf("%s=" sp "%s" sp "\n", join(sects, level + 1, prefix), val)
+		{
+			if (r[2] == "-")
+			{
+				if (sect[level] == "")
+				{
+					printf("%s=()\n", join(sects, level, prefix))
+					sect[level] = "-"
+				}
+				printf("%s+=(" sp "%s" sp ")\n", join(sects, level, prefix), val)
+			}
+			else
+				printf("%s=" sp "%s" sp "\n", join(sects, level + 1, prefix), val)
+		}
 	}
 	' "$1"
 }
