@@ -24,12 +24,22 @@ function _venv_find
 function venv_activate
 {
 	local name
-	name=$(_venv_find "$1") || {
-		echo "Missing virtualenv in ${1:-.venv/.env}, try: venv -c"
-		return 1
-	}
-	$venv_debug . "$name/bin/activate"
-	return 0
+	local cwd=$(pwd)
+	local last="$cmd"
+	while :; do
+		name=$(_venv_find "$1") && {
+			$venv_debug . "$name/bin/activate"
+			cd "$cwd"
+			return 0
+		}
+		cd ..
+		local cur=$(pwd)
+		[[ $cur == $last ]] && {
+			echo "Missing virtualenv in ${1:-.venv/.env}, try: venv -c"
+			return 1
+		}
+		last="$cur"
+	done
 }
 
 function venv_create
