@@ -1,36 +1,20 @@
 #!/bin/bash
 # (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
 
-
 if [ -z "$_stdout_piped" ]; then
 	[[ -t 1 ]] && _stdout_piped= || _stdout_piped=y
 fi
 
-#TODO:  add option for output descriptor (and check the descriptor)
-
 
 #------------------------------------------------------------------------------
-# Print color sequence
+# Helper. Print color sequence without terminal check.
 #
-# c [color]...
+# _do_color [color]...
 #
-# Where:
-#   `color' is ansi code (1, 31, 41) or name like:
-#           b i u s or bold italic underline strike dim...
-#           black, red, green, yellow, blue...
-#           upercase for background (BLACK, RED, GREEN...)
-#           K (black), R, G, Y, B, M, C, W
-#           or the same with "f" like fK, fR, fG...
-#           background with "b", like bK, bR, bG...
-#           or full name (see code below)
-#
-# Example:
-#   echo "This is $(c red)red$(c) text on $(c bB)blue$(c) background."
+# See c()
 #------------------------------------------------------------------------------
-c()
+_do_color()
 {
-	[[ y = "$_stdout_piped" ]] && return  # only terminal
-	case "$TERM" in xterm|xterm-color|*-256color) ;; *) return ;; esac # only colors
 	local col=( "$@" )
 	local i
 	for i in ${!col[@]}; do
@@ -111,6 +95,40 @@ c()
 	IFS=$oldIFS
 	echo -en '\033['${col:-0}'m'
 }
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+_color_term_check()
+{
+	[[ -t ${1:-1} ]] || return 1 # only terminal
+	case "$TERM" in
+		# only colors
+		xterm|xterm-color|*-color|*-256color) return 0;;
+		*) return 2;;
+	esac
+}
+#------------------------------------------------------------------------------
+# Print color sequence
+#
+# c [color]...
+#
+# Where:
+#   `color' is ansi code (1, 31, 41) or name like:
+#           b i u s or bold italic underline strike dim...
+#           black, red, green, yellow, blue...
+#           upercase for background (BLACK, RED, GREEN...)
+#           K (black), R, G, Y, B, M, C, W
+#           or the same with "f" like fK, fR, fG...
+#           background with "b", like bK, bR, bG...
+#           or full name (see code below)
+#
+# Example:
+#   echo "This is $(c red)red$(c) text on $(c bB)blue$(c) background."
+#------------------------------------------------------------------------------
+c()
+{
+	[[ $_stdout_piped  ]] && return 0
+	_do_color "$@"
+}
 # recorded: i.black|bhji.red|bhji.green|bhji.yellow|bhji.blue|bhji.magenta|bhji.cyan|bhji.white|bhj
 #------------------------------------------------------------------------------
 # Echo with color tags (like {b}...{/b})
@@ -125,13 +143,18 @@ c()
 #------------------------------------------------------------------------------
 echoc()
 {
+	local use_color
+	local fd=1
 	local -a opt
 	while [[ $# -gt 0 ]]; do
 		case "$1" in
 			-[neE]|-[neE][neE]|-[neE][neE][neE]) opt+=("$1"); shift;;
+			--err|--stderr) fd=2; shift;;
+			--fd) arg_arg fd; shift;;
 			*) break;;
 		esac
 	done
+	_color_term_check $fd && use_color='y'
 	local txt="${*}"
 	local out
 	local re='((\{\{|}})|([^{}]+)|\{([^}]*)\})(.*)'
@@ -139,11 +162,11 @@ echoc()
 		out+="${BASH_REMATCH[2]:1}"
 		out+="${BASH_REMATCH[3]}"
 		local col=${BASH_REMATCH[4]}
-		[[ $col ]] && out+="$(c $col)"
+		[[ $use_color && $col ]] && out+="$(_do_color $col)"
 		txt="${BASH_REMATCH[5]}"
 	done
 	out+=$txt
-	out+=$(c reset)
-	echo "${opt[@]}" "$out"
+	[[ $use_color ]] && out+=$(_do_color reset)
+	echo "${opt[@]}" "$out" >& $fd
 }
 #------------------------------------------------------------------------------
