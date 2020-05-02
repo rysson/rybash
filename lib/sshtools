@@ -115,5 +115,17 @@ mssh_controlop()
 	local channel="${1:-main}"
 	case "$channel" in @?*) channel="${1#?}";; esac
 	echo "-o ControlPath=~/.ssh/ssh-$channel-$$.sock"
+	[[ -e ~/.ssh/ssh-$channel-$$.sock ]]
+}
+#------------------------------------------------------------------------------
+# Returns true if channel is open (socket exists)
+#
+# mssh_is_open [@channel]
+#
+mssh_is_open()
+{
+	local channel="${1:-main}"
+	case "$channel" in @?*) channel="${1#?}";; esac
+	[[ -e ~/.ssh/ssh-$channel-$$.sock ]]
 }
 #------------------------------------------------------------------------------
