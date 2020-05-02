@@ -41,7 +41,7 @@ rybash-include error
 #------------------------------------------------------------------------------
 arg_local()
 {
-	echo 'local _arg arg _arg_end _arg_rest _args _args_copied _arg_shift _lnarg_shift _arg_unrest op _optarg optarg'
+	echo 'local _arg arg _arg_end _arg_rest _args _args_copied _arg_skip_shift _lnarg_shift _arg_unrest op _optarg optarg'
 }
 #------------------------------------------------------------------------------
 # Parse arguments
@@ -66,23 +66,20 @@ arg_parse()
 	[[ ${#_args[@]} = 0 ]] && { unset _args_copied; _arg_end=$TRUE; return 1; }
 	op="${_args[0]}"
 	_args=("${_args[@]:1}")
-	_arg_shift=
 	_lnarg_shift=
 	_arg_unrest=
 	arg=
 	optarg=
 	if is_false "$_arg_end"; then
 		case "$op" in
-			--?*=*) _arg="${op#*=}";    _optarg="$_arg";   op="${op%%=*}";;
-			--?*)   _arg="${_args[0]}"; _optarg=$TRUE;     _arg_shift=$TRUE;;
+			--?*=*) _arg="${op#*=}";    _optarg="$_arg";   op="${op%%=*}"; _arg_skip_shift=$TRUE;;
+			--?*)   _optarg=$TRUE;;
 			--)     _arg_end=$TRUE; _arg_rest=("${_arg_rest[@]}" "${_args[@]}");
 			        _args=(); return 1;;
-			-??*)   _arg="${op:2}";     _optarg="${_arg}"; op="${op:0:2}";
+			-??*)   _arg="${op:2}";     _optarg="${_arg}"; op="${op:0:2}"; _arg_skip_shift=$TRUE;
 			        _lnarg_shift=$TRUE; _args=("-$_arg" "${_args[@]}");;
-			-?)     _arg="${_args[0]}"; _optarg=;          _arg_shift=$TRUE;;
-			*)      _arg="${_args[0]}"; _optarg=$TRUE;     _arg_shift=$TRUE;
-			        _arg_rest+=("$op"); _arg_unrest=$TRUE ;;
-			# *)      _arg=;              _optarg=;          _arg_rest+=($op);;
+			-?)     _optarg=$TRUE;;
+			*)      _optarg=$TRUE; _arg_rest+=("$op"); _arg_unrest=$TRUE ;;
 		esac
 	fi
 }
@@ -91,37 +88,58 @@ arg_parse()
 arg_reset()
 {
 	unset _args_copied
+	_args=()
+	_arg_rest=()
 }
 #------------------------------------------------------------------------------
 # Return argument (optional or positional).
 #
-# arg_arg [var]
+# arg_arg [var]...
 #
 # If used in arg_parse loop, returns option argument. Shift if neccesery.
+# Can assign more variables if their names are given.
 # If used after arg_aprse loop, returns positional argument.
 #------------------------------------------------------------------------------
 arg_arg()
 {
-	if is_true "$_arg_end"; then
-		[[ ${#_arg_rest[@]} = 0 ]] && arg= && return 1
-		arg="${_arg_rest[0]}"
-		_arg_rest=("${_arg_rest[@]:1}")
-	else
-		if is_true "$_arg_shift"; then
-			_args=("${_args[@]:1}")
-			is_true "$_arg_unrest" && _arg_unrest= && unset '_arg_rest[-1]'
+	[[ $# = 0 ]] && set -- ''
+	while [[ $# != 0 ]]; do
+		if is_true "$_arg_end"; then
+			[[ ${#_arg_rest[@]} = 0 ]] && arg= && return 1
+			arg="${_arg_rest[0]}"
+			_arg_rest=("${_arg_rest[@]:1}")
+		else
+			if is_true "$_lnarg_shift"; then
+				case "$op" in
+					-[^-])  [[ $_arg ]] && _args=("${_args[@]:1}");;
+				esac
+				_lnarg_shift=
+			fi
+			if is_false "$_arg_skip_shift"; then
+				[[ ${#_args[@]} = 0 ]] && arg= && return 1
+				_arg="${_args[0]}"
+				_args=("${_args[@]:1}")
+				is_true "$_arg_unrest" && _arg_unrest= && unset '_arg_rest[-1]'
+			fi
+			_arg_skip_shift=
+			arg="$_arg"
 		fi
-		if is_true "$_lnarg_shift"; then
-			case "$op" in
-				-[^-])  [[ $_arg ]] && _args=("${_args[@]:1}");;
-			esac
-			_lnarg_shift=
-		fi
-		_arg_shift=
-		arg="$_arg"
-	fi
+		local re='^[a-zA-Z_]\w*$'
+		[[ $1 =~ $re ]] && eval "$1='$arg'" || :
+		shift
+	done
+}
+#------------------------------------------------------------------------------
+# Append argument to given array.
+#
+# arg_append ARRAY_NAME
+#------------------------------------------------------------------------------
+arg_append()
+{
+	[[ $# = 0 ]] && return 1
 	local re='^[a-zA-Z_]\w*$'
-	[[ $1 =~ $re ]] && eval "$1='$arg'" || :
+	arg_arg
+	[[ $1 =~ $re ]] && eval "$1+=('$arg')" || return 1
 }
 #------------------------------------------------------------------------------
 # Return true if has argument (optional or positional).
@@ -139,7 +157,7 @@ arg_exists()
 	elif is_true "$_lnarg_shift"; then
 		# has optional short argument (-aXX)
 		true
-	elif is_true "$_arg_shift"; then
+	elif is_false "$_arg_skip_shift"; then
 		# has separate argument (-a XX, --a XX)
 		[[ ${#_args[@]} != 0 ]]
 	else
@@ -166,12 +184,23 @@ arg_optarg()
 	[[ $1 =~ $re ]] && eval "$1='$arg'"
 }
 #------------------------------------------------------------------------------
+# No argument. Just rest eat $op (skip it from positional args).
+#
+# arg_none
+#------------------------------------------------------------------------------
+arg_none()
+{
+	is_false "$_arg_end" && is_true "$_arg_unrest" && _arg_unrest= && unset '_arg_rest[-1]'
+	arg=
+}
+#------------------------------------------------------------------------------
 # Return boolaen arguments (true).
 #
 # arg_true [var]
 #------------------------------------------------------------------------------
 arg_true()
 {
+	is_false "$_arg_end" && is_true "$_arg_unrest" && _arg_unrest= && unset '_arg_rest[-1]'
 	arg="$TRUE"
 	local re='^[a-zA-Z_]\w*$'
 	[[ $1 =~ $re ]] && eval "$1='$TRUE'"
@@ -196,7 +225,7 @@ arg_error()
 arg_undo()
 {
 	[[ $# > 0 ]] && _args=("$@" "${_args[@]}") || _args=("$op" "${_args[@]}")
-	_arg_shift=
+	_arg_skip_shift=
 	_lnarg_shift=
 	arg=
 	optarg=
@@ -208,6 +237,10 @@ arg_undo()
 #------------------------------------------------------------------------------
 arg_apply_rest()
 {
-	echo 'set -- "${_args[@]}"'
+	 if is_true "$_arg_end"; then
+		 echo 'set -- "${_arg_rest[@]}"'
+	 else
+		 echo 'set -- "${_args[@]}"'
+	 fi
 }
 #------------------------------------------------------------------------------

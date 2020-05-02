@@ -24,7 +24,7 @@ is_false()
 	[[ $FALSE = $1 ]]
 }
 #------------------------------------------------------------------------------
-# true if is exactly true (like Python: bool(val), where val is str)
+# true if is like true (like Python: bool(val), where val is str)
 if_true()
 {
 	case "$1" in
@@ -33,7 +33,7 @@ if_true()
 	esac
 }
 #------------------------------------------------------------------------------
-# true if false (line Python: not val, where val is str)
+# true if is like false (line Python: not val, where val is str)
 if_false()
 {
 	! if_true "$1"
