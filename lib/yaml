@@ -17,6 +17,9 @@
 #   eval $(yaml_simple_parse config.yaml conf_)
 #
 # Inpirated by https://stackoverflow.com/a/21189044/9935708
+# Note, \047 is apostophe (').
+# Note, variables in funcions after many spaces are local variables.
+#
 function yaml_simple_parse
 {
 	if [[ "$1" == '-q' ]]; then
@@ -41,7 +44,7 @@ function yaml_simple_parse
 		else while (length(s) < length(indent[level]))
 			level--
 		var = r[3]; type = r[4]; val = r[5]
-		if (match(val, /^".*"$|^'"'"'.*'"'"'$/))
+		if (match(val, /^".*"$|^\047.*\047$/))
 			val = substr(val, 2, length(val) - 2)
 		sects[level + 1] = var
 		if (type == "!ENV") sp = "\""; else sp = ap

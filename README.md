@@ -10,8 +10,8 @@ Install
 Clone the project and install (add source to .bashrc).
 
 ```bash
-mkdir -p "$HOME/.local.share"
-cd "$HOME/.local.share"
+mkdir -p "$HOME/.local/share"
+cd "$HOME/.local/share"
 https://git.sharkbits.com/misc/shell/rybash.git
 ./rybash/install.sh
 ```
@@ -46,12 +46,12 @@ while arg_parse "$@"; do
     -*)        arg_error;;
   esac
 done
-```
 
 arg_arg db && echo "File is '$db'"  || error "No database"
 while arg_arg; do
-  echo "Extra posistional argument '$arg'"
+  echo "Extra positional argument '$arg'"
 done
+```
 
 
 ### ask
@@ -89,7 +89,7 @@ ask -C "yes/no/Have you lost your mind" "Execute rm -rf" remove
 
 ### bashfs
 
-Simple filesystem in source bash scripts.
+Simple file-system in source bash scripts.
 
 Example:
 ```bash
@@ -144,12 +144,25 @@ mssh_exit
 
 ### yaml
 
-Parse simple YAML files (without referneces and multilines).
+Parse simple YAML files (without references and multi-lines).
 
 Example:
 ```bash
 eval $(yaml_simple_parse config.yaml conf_)
 : "${conf_section_sub_section_var:=my default value}"
 echo $conf_section_sub_section_var
+```
+
+### toml
+
+Parse simple TOML files (without references and multi-lines).
+
+Example:
+```bash
+eval $(toml_simple_parse config.toml conf_)
+: "${conf_section_sub_section_var:=my default value}"
+echo $conf_section_sub_section_var
+echo $conf_table_0_var $conf_table_1_var
+echo "${$conf_table_var[@]}"
 ```
 
