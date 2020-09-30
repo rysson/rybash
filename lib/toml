@@ -31,7 +31,7 @@ function toml_simple_parse
 	{
 		match(sect, /^\s*(\[+)\s*("([^"]+)"|\047([^\047]+)\047|([^]"\047]+))\s*\]+(\s*#.*)?$/, r)
 		sect = r[3]r[4]r[5]
-		if(r[1] = "[[")
+		if(r[1] == "[[")
 		{
 			tables[sect] += 1
 			sect = sect "_" (tables[sect]-1)
