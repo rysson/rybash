@@ -10,7 +10,7 @@
 }
 
 # Default config
-source $(dirname "${BASH_SOURCE[0]}")/env
+source $(dirname $(readlink -f "${BASH_SOURCE[0]}"))/env
 export RYBASH
 # always reinitialize
 _rybash_initialized=
