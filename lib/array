@@ -1,0 +1,65 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+
+#------------------------------------------------------------------------------
+# Join argument with seprartor (any including $'\n').
+#
+# join_by SEP VAL [VAL]...
+#
+# See: https://stackoverflow.com/a/17841619/9935708
+#------------------------------------------------------------------------------
+array_join_by()
+{
+	local d=$1
+	shift
+	echo -n "$1"
+	shift
+	printf "%s" "${@/#/$d}"
+}
+#------------------------------------------------------------------------------
+join_by()
+{
+	array_join_by "$@"
+}
+#------------------------------------------------------------------------------
+# Remove single or all element(s) from array.
+#
+# array_remove [--all] ARRAY ITEM
+#
+#------------------------------------------------------------------------------
+array_remove()
+{
+	local _array
+	local _all
+	[[ $1 = '--all' ]] && _all=y && shift
+	eval "_array=(\"\${$1[@]}\")"
+	for ((i=0; i<${#_array[@]}; i++)); do
+		if [[ ${_array[$i]} = $2 ]]; then
+			unset "_array[$i]"
+			[[ $_all = y ]] || break
+		fi
+	done
+	eval "$1=(\"\${_array[@]}\")"
+}
+#------------------------------------------------------------------------------
+# Remove single or all element(s) from array starting from end.
+#
+# array_tail_remove [--all] ARRAY ITEM
+#
+#------------------------------------------------------------------------------
+array_tail_remove()
+{
+	local _array
+	local _all
+	[[ $1 = '--all' ]] && _all=y && shift
+	eval "_array=(\"\${$1[@]}\")"
+	for ((i=${#_array[@]}-1; i>=0; i--)); do
+		if [[ ${_array[$i]} = $2 ]]; then
+			unset "_array[$i]"
+			[[ $_all = y ]] || break
+		fi
+	done
+	eval "$1=(\"\${_array[@]}\")"
+}
+#------------------------------------------------------------------------------

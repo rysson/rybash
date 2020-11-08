@@ -1,0 +1,177 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+rybash include traps
+
+
+#------------------------------------------------------------------------------
+# Translation from raw key to key name
+declare -gA rybash_key_names_by_raw=(
+
+	[$'\e']=Esc
+	[$'\t']=Tab
+	[$'\e[Z']=ShiftTab
+	[$'\302\211']=AltTab
+	[$'\n']=Enter
+	[$'\b']=Backspace    # or CtrlBackspace
+	[$'\177']=Backspace  # or CtrlBackspace
+
+	[$'\eOA']=Up
+	[$'\eOB']=Down
+	[$'\eOC']=Right
+	[$'\eOD']=Left
+
+	[$'\e[A']=Up
+	[$'\e[B']=Down
+	[$'\e[C']=Right
+	[$'\e[D']=Left
+
+	[$'\e[H']=Home
+	[$'\e[F']=End
+
+	[$'\e[2~']=Insert
+	[$'\e[3~']=Delete
+	[$'\e[5~']=PgeUp
+	[$'\e[6~']=PageDown
+
+	[$'\eOP']=F1
+	[$'\eOQ']=F2
+	[$'\eOR']=F3
+	[$'\eOS']=F4
+
+	[$'\e[P']=F1
+	[$'\e[Q']=F2
+	[$'\e[R']=F3
+	[$'\e[S']=F4
+
+	[$'\e[11~']=F1
+	[$'\e[12~']=F2
+	[$'\e[13~']=F3
+	[$'\e[14~']=F4
+	[$'\e[15~']=F5
+	[$'\e[16~']=F6
+	[$'\e[17~']=F7
+	[$'\e[18~']=F8
+	[$'\e[19~']=F9
+	[$'\e[20~']=F10
+	[$'\e[23~']=F11
+	[$'\e[24~']=F12
+
+	[$'\001']=CtrlA
+	[$'\002']=CtrlB
+	[$'\003']=CtrlC
+	[$'\004']=CtrlD
+	[$'\005']=CtrlE
+	[$'\006']=CtrlF
+	[$'\007']=CtrlG
+	[$'\013']=CtrlK
+	[$'\014']=CtrlL
+	[$'\016']=CtrlN
+	[$'\017']=CtrlO
+	[$'\020']=CtrlP
+	[$'\021']=CtrlQ
+	[$'\022']=CtrlR
+	[$'\023']=CtrlS
+	[$'\024']=CtrlT
+	[$'\025']=CtrlU
+	[$'\026']=CtrlV
+	[$'\027']=CtrlW
+	[$'\030']=CtrlX
+	[$'\031']=CtrlY
+	[$'\032']=CtrlZ
+
+)
+#------------------------------------------------------------------------------
+# Read key. Set rybash_key_name etc.
+#
+# get_key [OPTIONS]
+#
+# Options:
+#   -p, --print  - print $rybash_key_name
+#
+# Function read one key (sequence of bytes) and set variables:
+#   - rybash_key_name  - key name, ASCII, UTF8 code or name from array
+#                        rybash_key_names_by_raw like Enter, Escape, F10
+#   - rybash_key_seq   - printable sequnece key butes like '\033[A'
+#   - rybash_key_code  - hex key bytes like '1B5B41'
+#   - rybash_key_raw   - key bytes, should not be used directly
+#
+# Function fails (returns 1) if can read input.
+#------------------------------------------------------------------------------
+get_key()
+{
+	local ch ch2
+	IFS=$'\0' read -d $'\0' -r -n1 ch || return
+	[[ $ch == $'\e' ]] && read -d $'\0' -n1 -t.1 ch2 && ch+="$ch2"
+	case "$ch" in
+		$'\e['|$'\eO') while read -d $'\0' -n1 ch2; do ch+="$ch2"; case "$ch2" in [a-zA-Z_~@]) break;; esac; done;;
+	esac
+	local utf_range=$'[\300-\377]'
+	rybash_key_raw="$ch"
+	case "$ch" in
+		'')          rybash_key_seq=;;
+		$'\n')       rybash_key_seq='\n';;
+		$utf_range*) rybash_key_seq="$ch";;
+		*)           rybash_key_seq="$(sed -n l <<< "$ch")"; rybash_key_seq="${rybash_key_seq%$}";;
+	 esac
+	rybash_key_code="$(echo -n "$rybash_key_raw" | xxd -p -u)"
+	[[ $rybash_key_raw ]] && rybash_key_name="${rybash_key_names_by_raw["$rybash_key_raw"]}" || rybash_key_name=
+	local re=$'^\e\[([0-9]+);([0-9]+)([A-Za-z_~@])$'
+	if [[ ! $rybash_key_name && $rybash_key_raw =~ $re ]]; then
+		local base=$'\e['"${BASH_REMATCH[1]}${BASH_REMATCH[3]}"
+		base="${rybash_key_names_by_raw[$base]}"
+		[[ ! $base ]] && base=$'\e['"${BASH_REMATCH[3]}" && base="${rybash_key_names_by_raw[$base]}"
+		if [[ $base ]]; then
+			rybash_key_name="$base"
+			case "${BASH_REMATCH[2]}" in [2468]) rybash_key_name="Shift$rybash_key_name";; esac
+			case "${BASH_REMATCH[2]}" in [5678]) rybash_key_name="Ctrl$rybash_key_name";; esac
+			case "${BASH_REMATCH[2]}" in [3478]) rybash_key_name="Alt$rybash_key_name";; esac
+		fi
+	elif [[ ! $rybash_key_name ]]; then
+		case "$rybash_key_raw" in
+			$'\e'[0-9])  rybash_key_name="Meta${rybash_key_raw:1}";;
+			$'\e'[a-z])  rybash_key_name="${rybash_key_raw^^}"; rybash_key_name="Alt${rybash_key_name:1}";;
+			$'\e'[A-Z])  rybash_key_name="MetaShift${rybash_key_raw:1}";;
+			$'\e\e')     rybash_key_name="MetaEsc";;
+		esac
+		if [[ ! $rybash_key_name && ${rybash_key_raw:0:1} = $'\e' ]]; then
+			local base="${rybash_key_raw:1}"
+			base="${rybash_key_names_by_raw[$base]}"
+			[[ $base ]] && rybash_key_name="Alt$base"
+		fi
+	fi
+	: "${rybash_key_name:=$rybash_key_seq}"
+	case "$1" in
+		-p|--print)  echo -n $rybash_key_name ;;
+	esac
+}
+#------------------------------------------------------------------------------
+# Enter into raw terminal to receive every key.
+#
+# term_raw_enter
+#
+# Can be call many times with term_raw_exit pair.
+#------------------------------------------------------------------------------
+term_raw_enter()
+{
+	[[ -t 0 ]] || return 1
+	trap_exit get_key_exit
+	rybash_term_state+=( "$(stty -g)" )
+	stty raw -echo
+}
+
+#------------------------------------------------------------------------------
+# Exin from raw terminal.
+#
+# term_raw_exit
+#
+#------------------------------------------------------------------------------
+term_raw_exit()
+{
+	[[ -t 0 ]] || return 1
+	stty "${rybash_term_state[-1]}"
+	unset 'rybash_term_state[-1]'
+	trap_exit -r get_key_exit
+}
+#------------------------------------------------------------------------------
+
