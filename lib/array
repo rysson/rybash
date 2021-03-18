@@ -63,3 +63,18 @@ array_tail_remove()
 	eval "$1=(\"\${_array[@]}\")"
 }
 #------------------------------------------------------------------------------
+# Returns true (zero code) if array contains item.
+#
+# array_contains ARRAY ITEM
+#
+#------------------------------------------------------------------------------
+array_contains()
+{
+	local -n _array="$1"
+	local _item
+	for _item in "${_array[@]}"; do
+		[[ $_item = $2 ]] && return 0
+	done
+	return 1
+}
+#------------------------------------------------------------------------------

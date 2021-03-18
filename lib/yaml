@@ -34,20 +34,49 @@ function yaml_simple_parse
 			prefix = prefix "_" array[i]
 		return prefix
 	}
+
+	function parse_val(val, sp,     r)
+	{
+		if(match(val, /^\[((\s*,?\s*("([^"]+)"|\047([^\047]*)\047|([^"\047#, ]+)))*)\]\s*(#.*)?$/, r))
+		{
+			val = gensub(/\s*,?\s*("([^"]+)"|\047([^\047]*)\047|([^"\047#, ]+))/, sp "\\2\\3\\4" sp " " , "g", r[1])
+			return "( "val")"
+		}
+		val = gensub(/^("([^"]+)"|\047([^\047]+)\047|([^"\047][^# ]*)\s*)(\s*#.*)?$/, "\\2\\3\\4", 1, val)
+		if(val)
+			return sp val sp
+	}
+
 	BEGIN { level=0; }
 	{
 		if (!match($0, /^(\s*):?(([^:#]+)\s*:|-)\s*(!\w+)?\s*(.*)\s*$/, r))
 			next
 		s = r[1]
 		if (length(s) > length(indent[level]))
+		{
 			indent[++level] = s
+			tabindex[level] = 0
+		}
 		else while (length(s) < length(indent[level]))
+		{
 			level--
-		var = r[3]; type = r[4]; val = r[5]
-		if (match(val, /^".*"$|^\047.*\047$/))
-			val = substr(val, 2, length(val) - 2)
+		}
+		type = r[4]; val = r[5]
+		var = gensub("-", "_", "g", r[3])
 		sects[level + 1] = var
+		if( ! var)
+		{
+			var = tabindex[level]
+			tabindex[level]++
+		}
+		else if(match(r[3], /^-\s*(.+)$/, rr))
+		{
+			sects[level + 1] = tabindex[level] "_" rr[1]
+			var = tabindex[level]
+			tabindex[level]++
+		}
 		if (type == "!ENV") sp = "\""; else sp = ap
+		val = parse_val(val, sp)
 		if (val != "")
 		{
 			if (r[2] == "-")
@@ -57,11 +86,12 @@ function yaml_simple_parse
 					printf("%s=()\n", join(sects, level, prefix))
 					sect[level] = "-"
 				}
-				printf("%s+=(" sp "%s" sp ")\n", join(sects, level, prefix), val)
+				printf("%s+=( " "%s" " )\n", join(sects, level, prefix), val)
 			}
 			else
-				printf("%s=" sp "%s" sp "\n", join(sects, level + 1, prefix), val)
+				printf("%s=" "%s" "\n", join(sects, level + 1, prefix), val)
 		}
+		sects[level + 1] = var
 	}
 	' "$1"
 }
