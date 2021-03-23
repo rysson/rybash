@@ -1,0 +1,182 @@
+#!/bin/bash
+# (c) by Robert Kalinowski <robert.kalinowski@sharkbits.com>
+
+#------------------------------------------------------------------------------
+# Normalize slashes in path. Ex. '///a/b//c/' -> '/a/b/c'.
+# Relative segments ('.' '..') are not changed.
+#
+# path.normslashes PATH
+#------------------------------------------------------------------------------
+path.normslashes()
+{
+	local re='(.*)//+(.*)'
+	local path="$1"
+	while [[ $path =~ $re ]]; do
+		path="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+	done
+	[[ ${#path} -gt 1 ]] && path="${path%/}"
+	echo -n "$path"
+}
+#------------------------------------------------------------------------------
+# Join one or more path components.
+#
+# path.join PATH [PATH]...
+#
+# See: https://docs.python.org/3/library/os.path.html#os.path.join
+#------------------------------------------------------------------------------
+path.join()
+{
+	local item path="$(path.normslashes "$1")"
+	shift
+	for item in "$@"; do
+		item="$(path.normslashes "$item")"
+		case "$item" in
+			/*) path="$item";;
+			*)  path="${path%/}/$item";;
+		esac
+	done
+	echo -n "$path"
+}
+#------------------------------------------------------------------------------
+# The same as path.join
+path_join()
+{
+	path.join "$@"
+}
+#------------------------------------------------------------------------------
+# Normalize a pathname by collapsing redundant separators and up-level
+# references. Unlike realpath/readlink, this returns relative path for relative
+# argument.
+#
+# path.normpath PATH
+#
+# See: https://docs.python.org/3/library/os.path.html#os.path.normpath
+#------------------------------------------------------------------------------
+path.normpath()
+{
+	local path item
+	case "$1" in
+		/*) path=$(realpath -m "$1"); echo -n "${path%$'\n'}"; return 0;;
+	esac
+	path="$(path.normslashes "$1")"
+	IFS=/ read -ra item <<< "$path"
+	path=()
+	for item in "${item[@]}"; do
+		case "$item" in
+			.) ;;
+			..) [[ ${#path[@]} = 0 || ${path[-1]} = '..' ]] && path+=('..') || unset 'path[-1]';;
+			*)  path+=("$item");;
+		esac
+	done
+	if [[ ${#path[@]} = 0 ]]; then
+		echo -n .
+	else
+		echo -n "${path[0]}"
+		printf '/%s' "${path[@]:1}"
+	fi
+}
+#------------------------------------------------------------------------------
+# The same as path.normpath
+norm_path()
+{
+	path.normpath "$@"
+}
+#------------------------------------------------------------------------------
+# Return a normalized absolutized version of the pathname path.
+#
+# path.abspath PATH
+#
+# See: https://docs.python.org/3/library/os.path.html#os.path.abspath
+#------------------------------------------------------------------------------
+path.abspath()
+{
+	local path
+	path=$(realpath -sm "$1")
+	echo -n "${path%$'\n'}"
+}
+#------------------------------------------------------------------------------
+# The same as path.abspath
+abs_path()
+{
+	path.abspath "$@"
+}
+#------------------------------------------------------------------------------
+# Return the canonical path of the specified filename, eliminating any symbolic
+# links encountered in the path.
+#
+# path.realpath PATH
+#
+# See: https://docs.python.org/3/library/os.path.html#os.path.realpath
+#------------------------------------------------------------------------------
+path.realpath()
+{
+	local path
+	path=$(realpath -m "$1")
+	echo -n "${path%$'\n'}"
+}
+#------------------------------------------------------------------------------
+# The same as path.realpath
+real_path()
+{
+	path.realpath "$@"
+}
+#------------------------------------------------------------------------------
+# Return the longest common sub-path of each pathname in the sequence paths.
+#
+# path.commonpath PATH [PATH]...
+#
+# Bash implementation of Python's os.path.commonpath().
+# Returns error (1) if paths contain both absolute and relative pathnames
+# or if paths is empty.
+#
+# See: https://docs.python.org/3/library/os.path.html#os.path.commonpath
+#------------------------------------------------------------------------------
+path.commonpath()
+{
+	[[ $# = 0 ]] && { echo "There is no any path" >&2; return 1; }
+
+	local path new
+	local slash=0
+	for path in "$@"; do
+		path="$(path.normslashes "$path")"
+		case "$path" in
+			/*) let slash++; path="${path:1}";;
+		esac
+		new+=( "$path" )
+	done
+	[[ $slash = 0 || $slash = ${#new[@]} ]] || { echo "Can't mix absolute and relative paths" >&2; return 1; }
+	set -- "${new[@]}"
+
+	IFS=/ read -ra path <<< "$1"
+	shift
+	while [[ $# != 0 ]]; do
+		IFS=/ read -ra new <<< "$1"
+		shift
+		for((i=0; i<"${#path[@]}"; i++)); do
+			[[ ${path[$i]} == ${new[$i]} ]] || break
+		done
+		path=( "${path[@]:0:$i}" )
+	done
+
+	if [[ $slash = 0 ]]; then
+		[[ ${#path[@]} -gt 0 ]] && echo -n "${path[0]}"
+		[[ ${#path[@]} -gt 1 ]] && printf '/%s' "${path[@]:1}"
+	else
+		printf '/%s' "${path[@]}"
+	fi
+}
+#------------------------------------------------------------------------------
+# The same as path.commonpath
+common_path()
+{
+	path.commonpath "$@"
+}
+#------------------------------------------------------------------------------
+# DEBUG - direct run (aka __name__ == '__main__' in Python)
+if [[ $0 = ${BASH_SOURCE[0]} ]]; then
+	# path SUBCOMMAND [ARGS]...
+	fun="$1"
+	shift
+	"path.$fun" "$@"
+fi
+#------------------------------------------------------------------------------
