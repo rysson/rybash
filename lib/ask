@@ -29,11 +29,21 @@ ask_non_interactive()
 #  -b, --bool [Y|N]                  yes/no value
 #  -c, --choose ITEMS                aa/bb/cc... item list, returns "aa"
 #  -C, --choose-single-letter ITEMS  aa/bb/cc... item list, returns "A"
+#  --readline                        use readline as line editor
+#  --insert TEXT                     inser5t TEXT before editing begins
 #
 #------------------------------------------------------------------------------
 ask()
 {
+	rybash_ask "$@"
+}
+#------------------------------------------------------------------------------
+# Do ask. See ask() documentation.
+#------------------------------------------------------------------------------
+rybash_ask()
+{
 	local prompt varname val showvalue defvalue defdef bin list return_letter
+	local read_opt=( -r )
 	local -A dict
 	eval $(arg_local)
 	while arg_parse "$@"; do
@@ -51,6 +61,8 @@ ask()
 				;;
 			-c|--choose)               arg_arg showvalue; _ask_build_list;;
 			-C|--choose-single-letter) arg_arg showvalue; _ask_build_list; return_letter=$TRUE;;
+			--readline)                read_opt+=( -e );;
+			--insert)                  arg_arg; read_opt+=( -i "$arg" );;
 			--help)                    _ask_help; return 0;;
 		esac
 	done
@@ -67,7 +79,7 @@ ask()
 		val="$defvalue"
 	else
 		while :; do
-			read -p "$prompt $(c dim)[$(c / cyan)$showvalue$(c / dim)]$(c): " val
+			read "${read_opt[@]}" -p "$prompt $(c dim)[$(c / cyan)$showvalue$(c / dim)]$(c): " val
 			[[ $val ]] || val="$defvalue"
 			if [[ ${#list[@]} != 0 ]]; then
 				val="${val,,}"
