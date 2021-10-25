@@ -56,6 +56,7 @@ function venv_create
 	case "$python" in
 		[1-9])       python="python$python" ;;
 		[1-9][0-9])  python="python${python%?}.${python#?}" ;;
+		[2-9].[0-9]|[3-9].[1-9][0-9])  python="python${python}" ;;
 	esac
 	case "$python" in
 		*/*) python_path="$python" ;;
@@ -70,7 +71,7 @@ function venv_create
 			else
 				echo "To use 'python3.5 -m venv' read ${0%/*}/README-venv.md"
 			fi ;;
-		*python3.[6-9])
+		*python3.[6-9]|*python3.[1-9][0-9])
 			if [[ -d "$python_path/distutils/command" ]]; then
 				method='venv'
 			else
@@ -78,7 +79,7 @@ function venv_create
 			fi ;;
 		*python3.7)  # old way - should be removed
 			case "$(python3 --version)" in 'Python 3.7.'*) method='venv';; esac ;;
-		''|*python3)
+		''|*python3|*python3.*)
 			method='venv' ;;
 	esac
 	echo "Creating $method '$name' for $python..."
@@ -88,6 +89,7 @@ function venv_create
 			$venv_debug "$python" -m venv ${args[extra]} "$name" && venv_activate "$name"
 			;;
 		*)
+			echo $venv_debug virtualenv -p "$python" "$name" && venv_activate "$name"
 			$venv_debug virtualenv -p "$python" "$name" && venv_activate "$name"
 			;;
 	esac
@@ -105,7 +107,7 @@ function venv
 			--*=*) o="${1#--}"; args[${o%%=*}]="${o#*=}" ;;
 			--*)   o="${1#--}"; args[${o%%=*}]="$yes" ;;
 			-c)    cmd='venv_create' ;;
-			-p[23]|-p[23][0-9])
+			-p[23]|-p[23][0-9]|-p3.[0-9]|-p3.[1-9][0-9])
 			       args[python]="${1#-p}" ;;
 			-s)    args[extra]+=" --system-site-packages" ;;
 			-*)    echo "Unknown option '$1'"; return 1 ;;
