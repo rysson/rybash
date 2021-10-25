@@ -109,6 +109,23 @@ mscp()
 	scp $ssh_ctl_op "$@"
 }
 #------------------------------------------------------------------------------
+# Master RSYNC command.
+#
+# mrsync [@channel] [rsync_arguments_without_e]...
+#
+# Example:
+#  mrsync @channel -Pah --delete NOHOST:/remote/path local/path
+#  mrsync -Pah --delete . NOHOST:/remote/backup/path
+#
+mrsync()
+{
+	local channel
+	case "$1" in @?*) channel="$1"; shift;; esac
+	local ssh_ctl_op=$(mssh_controlop "$channel")
+	echo rsync -e "ssh $ssh_ctl_op" "$@"
+	rsync -e "ssh $ssh_ctl_op" "$@"
+}
+#------------------------------------------------------------------------------
 # Helper. Get channel scket name.
 mssh_controlop()
 {
